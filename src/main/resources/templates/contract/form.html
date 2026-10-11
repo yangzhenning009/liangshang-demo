@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>合同档案 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建合同' : '编辑合同'">合同档案</h1>
+            <p class="lede">买方、卖方各选一个主体，并写下签约时的名称。含税、不含税、税额都知道时，含税须等于后两者之和；不知道的金额留空。采购合同还要选对供应商档案。</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:if="${form.id != null}" th:href="@{/contracts/{id}(id=${form.id})}">查看详情</a>
+            <a class="btn secondary" th:href="@{/contracts}">返回列表</a>
+        </div>
+    </div>
+    <form class="panel" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/contracts} : @{/contracts/{id}(id=${form.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <h2>合同身份</h2>
+        <div class="grid">
+            <label class="field">合同编号
+                <input th:field="*{contractNumber}">
+            </label>
+            <label class="field">名称
+                <input th:field="*{contractTitle}">
+            </label>
+            <label class="field">类型
+                <select th:field="*{contractType}">
+                    <option th:each="type : ${contractTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </label>
+            <label class="field">计价方式
+                <select th:field="*{pricingMethod}">
+                    <option th:each="method : ${pricingMethods}" th:value="${method}" th:text="${method}"></option>
+                </select>
+            </label>
+            <label class="field">币种
+                <input th:field="*{currency}" placeholder="如 CNY">
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${contractStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">审批
+                <select th:field="*{approvalStatus}">
+                    <option th:each="status : ${approvalStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">来源材料
+                <select th:replace="~{fragments/document-select :: bound('sourceDocumentId')}"></select>
+            </label>
+        </div>
+        <h2>买方</h2>
+        <div class="grid">
+            <label class="field">买方公司
+                <select th:field="*{buyerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">买方法人
+                <select th:field="*{buyerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">买方自然人
+                <select th:field="*{buyerPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">签约名称
+                <input th:field="*{buyerNameSnapshot}">
+            </label>
+            <label class="field">税号快照
+                <input th:field="*{buyerTaxpayerIdSnapshot}">
+            </label>
+            <label class="field">签署人
+                <select th:field="*{buyerSignatoryPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">联系人
+                <select th:field="*{buyerContactPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+        </div>
+        <h2>卖方</h2>
+        <div class="grid">
+            <label class="field">卖方公司
+                <select th:field="*{sellerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">卖方法人
+                <select th:field="*{sellerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">卖方自然人
+                <select th:field="*{sellerPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">签约名称
+                <input th:field="*{sellerNameSnapshot}">
+            </label>
+            <label class="field">税号快照
+                <input th:field="*{sellerTaxpayerIdSnapshot}">
+            </label>
+            <label class="field">签署人
+                <select th:field="*{sellerSignatoryPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">联系人
+                <select th:field="*{sellerContactPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+        </div>
+        <h2>采购档案</h2>
+        <p class="hint">只有采购合同填写。采购公司要等于档案上的采购公司，买方公司与之相同，卖方要等于档案上的供货对象。</p>
+        <div class="grid">
+            <label class="field">采购公司
+                <select th:field="*{procurementCompanyId}">
+                    <option value="">非采购留空</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">供应商档案
+                <select th:field="*{supplierId}">
+                    <option value="">非采购留空</option>
+                    <option th:each="supplier : ${suppliers}" th:value="${supplier.id}"
+                            th:text="${supplier.supplierCode + ' ' + supplier.supplierName}"></option>
+                </select>
+            </label>
+            <label class="field">管理公司
+                <select th:field="*{managingCompanyId}">
+                    <option value="">未指定</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">经办人
+                <select th:field="*{contractOwnerEmployeeId}">
+                    <option value="">未指定</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+        </div>
+        <h2>价款与期间</h2>
+        <div class="grid">
+            <label class="field">不含税金额
+                <input type="number" step="0.01" min="0" th:field="*{contractNetAmount}">
+            </label>
+            <label class="field">税额
+                <input type="number" step="0.01" min="0" th:field="*{contractTaxAmount}">
+            </label>
+            <label class="field">含税总价
+                <input type="number" step="0.01" min="0" th:field="*{contractGrossAmount}">
+            </label>
+            <label class="field">签署日
+                <input type="date" th:field="*{signedAt}">
+            </label>
+            <label class="field">生效日
+                <input type="date" th:field="*{validFrom}">
+            </label>
+            <label class="field">约定结束
+                <input type="date" th:field="*{validTo}">
+            </label>
+            <label class="field">审批人
+                <select th:field="*{contractApprovedByEmployeeId}">
+                    <option value="">未批准</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+            <label class="field">审批时间
+                <input type="datetime-local" th:field="*{contractApprovedAt}">
+            </label>
+            <label class="field">终止日
+                <input type="date" th:field="*{terminationDate}">
+            </label>
+            <label class="field span-2">终止原因
+                <input th:field="*{terminationReason}">
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存合同</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

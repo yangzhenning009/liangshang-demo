@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>合同 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>合同</h1>
+            <p class="lede">买方和卖方各自恰好一个主体。采购合同要对应供应商档案。变更另记条款版本，原来的版本留着。</p>
+        </div>
+        <a class="btn" th:href="@{/contracts/new}">新建合同</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>买方</th>
+                    <th>卖方</th>
+                    <th>审批</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="8" class="empty">还没有合同。先写明签约双方和生效日，品项与阶段在详情里补。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.contractNumber}">CT</td>
+                    <td th:text="${item.contractTitle}">合同</td>
+                    <td th:text="${item.contractType}">销售</td>
+                    <td th:text="${item.buyer}">买方</td>
+                    <td th:text="${item.seller}">卖方</td>
+                    <td th:text="${item.approvalStatus}">草稿</td>
+                    <td><span class="badge" th:text="${item.status}">未生效</span></td>
+                    <td class="actions">
+                        <a th:href="@{/contracts/{id}(id=${item.id})}">详情</a>
+                        <a th:href="@{/contracts/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/contracts/{id}/delete(id=${item.id})}" method="post"
+                              onsubmit="return confirm('删除该合同及其条款、品项、阶段和项目关联？');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

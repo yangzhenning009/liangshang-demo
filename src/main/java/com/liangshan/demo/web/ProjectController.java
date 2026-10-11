@@ -7,6 +7,7 @@ import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
 import com.liangshan.demo.service.PersonService;
+import com.liangshan.demo.service.ContractService;
 import com.liangshan.demo.service.ProjectService;
 import com.liangshan.demo.web.form.ProjectDetailForm;
 import com.liangshan.demo.web.form.ProjectForm;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
@@ -28,6 +30,7 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projects;
+    private final ContractService contracts;
     private final CompanyRepository companies;
     private final LegalPersonService legalPersons;
     private final PersonService persons;
@@ -36,12 +39,14 @@ public class ProjectController {
 
     public ProjectController(
             ProjectService projects,
+            ContractService contracts,
             CompanyRepository companies,
             LegalPersonService legalPersons,
             PersonService persons,
             EmployeeService employees,
             DepartmentService departments) {
         this.projects = projects;
+        this.contracts = contracts;
         this.companies = companies;
         this.legalPersons = legalPersons;
         this.persons = persons;
@@ -155,7 +160,31 @@ public class ProjectController {
         model.addAttribute("header", projects.header(id));
         model.addAttribute("form", projects.detailForm(id));
         model.addAttribute("versions", projects.versionHistory(id));
+        model.addAttribute("linkedContracts", contracts.linksForProject(id));
+        model.addAttribute("contractChoices", contracts.list());
         return "project/detail";
+    }
+
+    @PostMapping("/{id}/contracts")
+    public String linkContract(
+            @PathVariable Long id,
+            @RequestParam Long contractId,
+            @RequestParam(required = false) String relationshipNote,
+            RedirectAttributes redirect) {
+        try {
+            contracts.linkProject(id, contractId, relationshipNote);
+            redirect.addFlashAttribute("message", "合同已关联到项目");
+        } catch (FieldErrorsException exception) {
+            redirect.addFlashAttribute("error", exception.getMessage());
+        }
+        return "redirect:/projects/" + id;
+    }
+
+    @PostMapping("/{id}/contracts/{linkId}/delete")
+    public String unlinkContract(@PathVariable Long id, @PathVariable Long linkId, RedirectAttributes redirect) {
+        contracts.unlinkProject(id, linkId);
+        redirect.addFlashAttribute("message", "已解除合同关联");
+        return "redirect:/projects/" + id;
     }
 
     @PostMapping("/{id}/details")
@@ -167,6 +196,8 @@ public class ProjectController {
             RedirectAttributes redirect) {
         model.addAttribute("header", projects.header(id));
         model.addAttribute("versions", projects.versionHistory(id));
+        model.addAttribute("linkedContracts", contracts.linksForProject(id));
+        model.addAttribute("contractChoices", contracts.list());
         if (binding.hasErrors()) {
             return "project/detail";
         }

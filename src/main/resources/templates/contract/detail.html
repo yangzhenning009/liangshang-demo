@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>合同详情 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${header.contractNumber + ' ' + header.contractTitle}">合同详情</h1>
+            <p class="lede" th:text="${header.buyer + ' 向 ' + header.seller}">买卖双方</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:href="@{/contracts/{id}/edit(id=${header.id})}">编辑档案</a>
+            <a class="btn secondary" th:href="@{/contracts}">返回列表</a>
+        </div>
+    </div>
+    <section class="panel">
+        <h2>当前条款</h2>
+        <p>
+            <span class="badge" th:text="${header.contractType}">类型</span>
+            <span class="badge" th:text="${header.pricingMethod}">计价</span>
+            <span class="badge" th:text="${header.currency}">币种</span>
+            <span class="badge" th:text="${header.approvalStatus}">审批</span>
+            <span class="badge" th:text="${header.status}">状态</span>
+        </p>
+        <p class="hint">品项和阶段改的是当前未结束的条款。要改签约对象、总价或合同期间，且当前版本不是今天才开始的，请在下方登记变更。登记后会复制品项、阶段和交付项，原版本不改金额和签约方。</p>
+    </section>
+
+    <section class="panel">
+        <h2>条款版本</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>版本</th>
+                    <th>变更</th>
+                    <th>买方名称</th>
+                    <th>含税总价</th>
+                    <th>约定生效</th>
+                    <th>版本开始</th>
+                    <th>版本结束</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="version : ${versions}">
+                    <td th:text="${version.versionNumber}">1</td>
+                    <td th:text="${version.amendmentId == null ? '原始条款' : version.amendmentId}">原始</td>
+                    <td th:text="${version.buyerNameSnapshot}">买方</td>
+                    <td th:text="${version.contractGrossAmount == null ? '未约定' : version.contractGrossAmount}">0</td>
+                    <td th:text="${version.agreedValidFrom}">开始</td>
+                    <td th:text="${version.validFrom}">开始</td>
+                    <td th:text="${version.validTo == null ? '当前' : version.validTo}">当前</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel" th:if="${!stageHistory.isEmpty()}">
+        <h2>阶段条款</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>阶段</th>
+                    <th>版本</th>
+                    <th>变更</th>
+                    <th>交付项编号</th>
+                    <th>开始</th>
+                    <th>结束</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${stageHistory}">
+                    <td th:text="${row.stageCode}">S1</td>
+                    <td th:text="${row.versionNumber}">1</td>
+                    <td th:text="${row.amendmentId == null ? '原始条款' : row.amendmentId}">原始</td>
+                    <td th:text="${row.deliverableCodes}">DL</td>
+                    <td th:text="${row.validFrom}">开始</td>
+                    <td th:text="${row.validTo == null ? '当前' : row.validTo}">当前</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <form class="panel" th:object="${form}" method="post" th:action="@{/contracts/{id}/details(id=${header.id})}">
+        <div class="alert" th:if="${detailErrors != null}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${detailErrors}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+
+        <h2>品项</h2>
+        <p class="hint">单价是不含税单价。数量还没约定就留空。三个金额都填写时，含税价等于不含税价加税额。不要用数量乘单价覆盖已经约定的金额。</p>
+        <div id="line-rows">
+            <div class="repeat-row" th:each="row, stat : *{lines}">
+                <div class="row-tools">
+                    <strong>品项</strong>
+                    <label class="check"><input type="checkbox" th:field="*{lines[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{lines[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">行号
+                        <input type="number" min="1" th:field="*{lines[__${stat.index}__].lineNumber}">
+                    </label>
+                    <label class="field">名称
+                        <input th:field="*{lines[__${stat.index}__].itemName}">
+                    </label>
+                    <label class="field">规格
+                        <input th:field="*{lines[__${stat.index}__].itemSpecification}">
+                    </label>
+                    <label class="field">单位
+                        <input th:field="*{lines[__${stat.index}__].unit}">
+                    </label>
+                    <label class="field">数量
+                        <input type="number" step="0.0001" min="0" th:field="*{lines[__${stat.index}__].contractedQuantity}">
+                    </label>
+                    <label class="field">不含税单价
+                        <input type="number" step="0.0001" min="0" th:field="*{lines[__${stat.index}__].unitNetPrice}">
+                    </label>
+                    <label class="field">税率
+                        <input type="number" step="0.000001" min="0" max="1" th:field="*{lines[__${stat.index}__].taxRate}" placeholder="如 0.13">
+                    </label>
+                    <label class="field">不含税金额
+                        <input type="number" step="0.01" min="0" th:field="*{lines[__${stat.index}__].lineNetAmount}">
+                    </label>
+                    <label class="field">税额
+                        <input type="number" step="0.01" min="0" th:field="*{lines[__${stat.index}__].lineTaxAmount}">
+                    </label>
+                    <label class="field">含税价
+                        <input type="number" step="0.01" min="0" th:field="*{lines[__${stat.index}__].lineGrossAmount}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('line-rows','line-template')">增加品项</button>
+
+        <h2>阶段</h2>
+        <p class="hint">阶段编号和序号在本合同内都不能重复。阶段币种留空时沿用合同币种。</p>
+        <div id="stage-rows">
+            <div class="repeat-row" th:each="row, stat : *{stages}">
+                <div class="row-tools">
+                    <strong>阶段</strong>
+                    <label class="check"><input type="checkbox" th:field="*{stages[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{stages[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">阶段编号
+                        <input th:field="*{stages[__${stat.index}__].stageCode}">
+                    </label>
+                    <label class="field">序号
+                        <input type="number" min="1" th:field="*{stages[__${stat.index}__].sequenceNo}">
+                    </label>
+                    <label class="field">名称
+                        <input th:field="*{stages[__${stat.index}__].stageName}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{stages[__${stat.index}__].status}">
+                            <option th:each="status : ${stageStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="field">负责人
+                        <select th:field="*{stages[__${stat.index}__].responsibleEmployeeId}">
+                            <option value="">未指定</option>
+                            <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                    th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{stages[__${stat.index}__].currency}" placeholder="如 CNY">
+                    </label>
+                    <label class="field span-2">交付说明
+                        <input th:field="*{stages[__${stat.index}__].deliverableDescription}">
+                    </label>
+                    <label class="field span-2">验收条件
+                        <input th:field="*{stages[__${stat.index}__].acceptanceCriteria}">
+                    </label>
+                    <label class="field">计划开始
+                        <input type="date" th:field="*{stages[__${stat.index}__].plannedStartAt}">
+                    </label>
+                    <label class="field">计划完成
+                        <input type="date" th:field="*{stages[__${stat.index}__].plannedDueAt}">
+                    </label>
+                    <label class="field">不含税
+                        <input type="number" step="0.01" min="0" th:field="*{stages[__${stat.index}__].stageNetAmount}">
+                    </label>
+                    <label class="field">税额
+                        <input type="number" step="0.01" min="0" th:field="*{stages[__${stat.index}__].stageTaxAmount}">
+                    </label>
+                    <label class="field">含税价
+                        <input type="number" step="0.01" min="0" th:field="*{stages[__${stat.index}__].stageGrossAmount}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('stage-rows','stage-template')">增加阶段</button>
+
+        <h2>交付项</h2>
+        <p class="hint">交付项编号在同一阶段内保持稳定。变更复制出新记录时仍用这个编号，不把新主键当成另一项。</p>
+        <div id="deliverable-rows">
+            <div class="repeat-row" th:each="row, stat : *{deliverables}">
+                <div class="row-tools">
+                    <strong>交付项</strong>
+                    <label class="check"><input type="checkbox" th:field="*{deliverables[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{deliverables[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">阶段
+                        <select th:field="*{deliverables[__${stat.index}__].stageId}">
+                            <option value="">本次新增的阶段</option>
+                            <option th:each="stage : ${stageChoices}" th:value="${stage.stageId}" th:text="${stage.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">或阶段编号
+                        <input th:field="*{deliverables[__${stat.index}__].stageCode}" placeholder="新建阶段时填写">
+                    </label>
+                    <label class="field">品项
+                        <select th:field="*{deliverables[__${stat.index}__].contractLineTermVersionId}">
+                            <option value="">不关联</option>
+                            <option th:each="line : ${lineChoices}" th:value="${line.lineTermId}" th:text="${line.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">或行号
+                        <input type="number" min="1" th:field="*{deliverables[__${stat.index}__].lineNumber}" placeholder="新建品项时填写">
+                    </label>
+                    <label class="field">编号
+                        <input th:field="*{deliverables[__${stat.index}__].deliverableCode}">
+                    </label>
+                    <label class="field">名称
+                        <input th:field="*{deliverables[__${stat.index}__].deliverableName}">
+                    </label>
+                    <label class="field">规格
+                        <input th:field="*{deliverables[__${stat.index}__].deliverableSpecification}">
+                    </label>
+                    <label class="field">单位
+                        <input th:field="*{deliverables[__${stat.index}__].unit}">
+                    </label>
+                    <label class="field">计划数量
+                        <input type="number" step="0.0001" min="0" th:field="*{deliverables[__${stat.index}__].plannedQuantity}">
+                    </label>
+                    <label class="field span-2">验收条件
+                        <input th:field="*{deliverables[__${stat.index}__].acceptanceCriteria}">
+                    </label>
+                    <label class="field">计划交付
+                        <input type="date" th:field="*{deliverables[__${stat.index}__].plannedDeliveryDate}">
+                    </label>
+                    <label class="field">计划验收
+                        <input type="date" th:field="*{deliverables[__${stat.index}__].plannedAcceptanceDate}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('deliverable-rows','deliverable-template')">增加交付项</button>
+
+        <h2>附加签署方</h2>
+        <p class="hint">担保、见证等第三方。买方和卖方不要在这里再记一次。</p>
+        <div id="signatory-rows">
+            <div class="repeat-row" th:each="row, stat : *{signatories}">
+                <div class="row-tools">
+                    <strong>签署方</strong>
+                    <label class="check"><input type="checkbox" th:field="*{signatories[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{signatories[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">公司
+                        <select th:field="*{signatories[__${stat.index}__].signatoryCompanyId}">
+                            <option value="">不选</option>
+                            <option th:each="company : ${companies}" th:value="${company.id}"
+                                    th:text="${company.companyCode + ' ' + company.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">法人
+                        <select th:field="*{signatories[__${stat.index}__].signatoryLegalPersonId}">
+                            <option value="">不选</option>
+                            <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">自然人
+                        <select th:field="*{signatories[__${stat.index}__].signatoryPersonId}">
+                            <option value="">不选</option>
+                            <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">角色
+                        <select th:field="*{signatories[__${stat.index}__].signatoryRole}">
+                            <option th:each="role : ${signatoryRoles}" th:value="${role}" th:text="${role}"></option>
+                        </select>
+                    </label>
+                    <label class="field span-2">责任
+                        <input th:field="*{signatories[__${stat.index}__].responsibilityDescription}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{signatories[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{signatories[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据
+                        <select th:replace="~{fragments/document-select :: bound('signatories[__${stat.index}__].basisDocumentId')}"></select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('signatory-rows','signatory-template')">增加签署方</button>
+
+        <h2>关联项目</h2>
+        <div id="link-rows">
+            <div class="repeat-row" th:each="row, stat : *{links}">
+                <div class="row-tools">
+                    <strong>项目</strong>
+                    <label class="check"><input type="checkbox" th:field="*{links[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{links[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">项目
+                        <select th:field="*{links[__${stat.index}__].projectId}">
+                            <option value="">请选择</option>
+                            <option th:each="project : ${projectRows}" th:value="${project.id}"
+                                    th:text="${project.projectCode + ' ' + project.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field span-2">关系说明
+                        <input th:field="*{links[__${stat.index}__].relationshipNote}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('link-rows','link-template')">关联项目</button>
+        <div class="form-actions">
+            <button type="submit">保存明细</button>
+        </div>
+    </form>
+
+    <form class="panel" th:object="${amendment}" method="post" th:action="@{/contracts/{id}/amendments(id=${header.id})}">
+        <h2>登记变更</h2>
+        <p class="hint">生效日须晚于当前条款的开始日。保存后新版本指向这份变更，原版本的金额和签约方保持不变。</p>
+        <div class="alert" th:if="${amendmentErrors != null}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${amendmentErrors}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <div class="grid">
+            <label class="field">变更编号
+                <input th:field="*{amendmentNumber}">
+            </label>
+            <label class="field">签署日
+                <input type="date" th:field="*{signedAt}">
+            </label>
+            <label class="field">生效日
+                <input type="date" th:field="*{effectiveAt}">
+            </label>
+            <label class="field">依据
+                <select th:replace="~{fragments/document-select :: bound('sourceDocumentId')}"></select>
+            </label>
+            <label class="field span-2">摘要
+                <input th:field="*{summary}">
+            </label>
+        </div>
+        <h2>变更后的条款</h2>
+        <div class="grid">
+            <label class="field">买方公司
+                <select th:field="*{terms.buyerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">买方法人
+                <select th:field="*{terms.buyerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">买方自然人
+                <select th:field="*{terms.buyerPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">买方签约名称
+                <input th:field="*{terms.buyerNameSnapshot}">
+            </label>
+            <label class="field">买方税号
+                <input th:field="*{terms.buyerTaxpayerIdSnapshot}">
+            </label>
+            <label class="field">卖方公司
+                <select th:field="*{terms.sellerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">卖方法人
+                <select th:field="*{terms.sellerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">卖方自然人
+                <select th:field="*{terms.sellerPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">卖方签约名称
+                <input th:field="*{terms.sellerNameSnapshot}">
+            </label>
+            <label class="field">卖方税号
+                <input th:field="*{terms.sellerTaxpayerIdSnapshot}">
+            </label>
+            <label class="field">买方签署人
+                <select th:field="*{terms.buyerSignatoryPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">卖方签署人
+                <select th:field="*{terms.sellerSignatoryPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">买方联系人
+                <select th:field="*{terms.buyerContactPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">卖方联系人
+                <select th:field="*{terms.sellerContactPersonId}">
+                    <option value="">未指定</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">采购公司
+                <select th:field="*{terms.procurementCompanyId}">
+                    <option value="">非采购留空</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">供应商档案
+                <select th:field="*{terms.supplierId}">
+                    <option value="">非采购留空</option>
+                    <option th:each="supplier : ${suppliers}" th:value="${supplier.id}"
+                            th:text="${supplier.supplierCode + ' ' + supplier.supplierName}"></option>
+                </select>
+            </label>
+            <label class="field">币种
+                <input th:field="*{terms.currency}" placeholder="如 CNY">
+            </label>
+            <label class="field">计价方式
+                <select th:field="*{terms.pricingMethod}">
+                    <option th:each="method : ${pricingMethods}" th:value="${method}" th:text="${method}"></option>
+                </select>
+            </label>
+            <label class="field">不含税金额
+                <input type="number" step="0.01" min="0" th:field="*{terms.contractNetAmount}">
+            </label>
+            <label class="field">税额
+                <input type="number" step="0.01" min="0" th:field="*{terms.contractTaxAmount}">
+            </label>
+            <label class="field">含税总价
+                <input type="number" step="0.01" min="0" th:field="*{terms.contractGrossAmount}">
+            </label>
+            <label class="field">签署日
+                <input type="date" th:field="*{terms.signedAt}">
+            </label>
+            <label class="field">约定生效
+                <input type="date" th:field="*{terms.validFrom}">
+            </label>
+            <label class="field">约定结束
+                <input type="date" th:field="*{terms.validTo}">
+            </label>
+            <label class="field">终止日
+                <input type="date" th:field="*{terms.terminationDate}">
+            </label>
+            <label class="field span-2">终止原因
+                <input th:field="*{terms.terminationReason}">
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">登记变更</button>
+        </div>
+    </form>
+
+    <form class="inline" th:action="@{/contracts/{id}/delete(id=${header.id})}" method="post"
+          onsubmit="return confirm('删除该合同及其条款、品项、阶段和项目关联？');">
+        <button class="danger" type="submit">删除合同</button>
+    </form>
+
+    <div id="line-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>品项</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="lines[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">行号<input type="number" min="1" name="lines[__INDEX__].lineNumber"></label>
+                <label class="field">名称<input name="lines[__INDEX__].itemName"></label>
+                <label class="field">规格<input name="lines[__INDEX__].itemSpecification"></label>
+                <label class="field">单位<input name="lines[__INDEX__].unit"></label>
+                <label class="field">数量<input type="number" step="0.0001" min="0" name="lines[__INDEX__].contractedQuantity"></label>
+                <label class="field">不含税单价<input type="number" step="0.0001" min="0" name="lines[__INDEX__].unitNetPrice"></label>
+                <label class="field">税率<input type="number" step="0.000001" min="0" max="1" name="lines[__INDEX__].taxRate" placeholder="如 0.13"></label>
+                <label class="field">不含税金额<input type="number" step="0.01" min="0" name="lines[__INDEX__].lineNetAmount"></label>
+                <label class="field">税额<input type="number" step="0.01" min="0" name="lines[__INDEX__].lineTaxAmount"></label>
+                <label class="field">含税价<input type="number" step="0.01" min="0" name="lines[__INDEX__].lineGrossAmount"></label>
+            </div>
+        </div>
+    </div>
+    <div id="stage-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>阶段</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="stages[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">阶段编号<input name="stages[__INDEX__].stageCode"></label>
+                <label class="field">序号<input type="number" min="1" name="stages[__INDEX__].sequenceNo"></label>
+                <label class="field">名称<input name="stages[__INDEX__].stageName"></label>
+                <label class="field">状态
+                    <select name="stages[__INDEX__].status">
+                        <option th:each="status : ${stageStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="field">负责人
+                    <select name="stages[__INDEX__].responsibleEmployeeId">
+                        <option value="">未指定</option>
+                        <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                    </select>
+                </label>
+                <label class="field">币种<input name="stages[__INDEX__].currency" placeholder="如 CNY"></label>
+                <label class="field span-2">交付说明<input name="stages[__INDEX__].deliverableDescription"></label>
+                <label class="field span-2">验收条件<input name="stages[__INDEX__].acceptanceCriteria"></label>
+                <label class="field">计划开始<input type="date" name="stages[__INDEX__].plannedStartAt"></label>
+                <label class="field">计划完成<input type="date" name="stages[__INDEX__].plannedDueAt"></label>
+                <label class="field">不含税<input type="number" step="0.01" min="0" name="stages[__INDEX__].stageNetAmount"></label>
+                <label class="field">税额<input type="number" step="0.01" min="0" name="stages[__INDEX__].stageTaxAmount"></label>
+                <label class="field">含税价<input type="number" step="0.01" min="0" name="stages[__INDEX__].stageGrossAmount"></label>
+            </div>
+        </div>
+    </div>
+    <div id="deliverable-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>交付项</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="deliverables[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">阶段
+                    <select name="deliverables[__INDEX__].stageId">
+                        <option value="">本次新增的阶段</option>
+                        <option th:each="stage : ${stageChoices}" th:value="${stage.stageId}" th:text="${stage.label}"></option>
+                    </select>
+                </label>
+                <label class="field">或阶段编号<input name="deliverables[__INDEX__].stageCode" placeholder="新建阶段时填写"></label>
+                <label class="field">品项
+                    <select name="deliverables[__INDEX__].contractLineTermVersionId">
+                        <option value="">不关联</option>
+                        <option th:each="line : ${lineChoices}" th:value="${line.lineTermId}" th:text="${line.label}"></option>
+                    </select>
+                </label>
+                <label class="field">或行号<input type="number" min="1" name="deliverables[__INDEX__].lineNumber" placeholder="新建品项时填写"></label>
+                <label class="field">编号<input name="deliverables[__INDEX__].deliverableCode"></label>
+                <label class="field">名称<input name="deliverables[__INDEX__].deliverableName"></label>
+                <label class="field">规格<input name="deliverables[__INDEX__].deliverableSpecification"></label>
+                <label class="field">单位<input name="deliverables[__INDEX__].unit"></label>
+                <label class="field">计划数量<input type="number" step="0.0001" min="0" name="deliverables[__INDEX__].plannedQuantity"></label>
+                <label class="field span-2">验收条件<input name="deliverables[__INDEX__].acceptanceCriteria"></label>
+                <label class="field">计划交付<input type="date" name="deliverables[__INDEX__].plannedDeliveryDate"></label>
+                <label class="field">计划验收<input type="date" name="deliverables[__INDEX__].plannedAcceptanceDate"></label>
+            </div>
+        </div>
+    </div>
+    <div id="signatory-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>签署方</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="signatories[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">公司
+                    <select name="signatories[__INDEX__].signatoryCompanyId">
+                        <option value="">不选</option>
+                        <option th:each="company : ${companies}" th:value="${company.id}"
+                                th:text="${company.companyCode + ' ' + company.name}"></option>
+                    </select>
+                </label>
+                <label class="field">法人
+                    <select name="signatories[__INDEX__].signatoryLegalPersonId">
+                        <option value="">不选</option>
+                        <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                    </select>
+                </label>
+                <label class="field">自然人
+                    <select name="signatories[__INDEX__].signatoryPersonId">
+                        <option value="">不选</option>
+                        <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                    </select>
+                </label>
+                <label class="field">角色
+                    <select name="signatories[__INDEX__].signatoryRole">
+                        <option th:each="role : ${signatoryRoles}" th:value="${role}" th:text="${role}"></option>
+                    </select>
+                </label>
+                <label class="field span-2">责任<input name="signatories[__INDEX__].responsibilityDescription"></label>
+                <label class="field">开始<input type="date" name="signatories[__INDEX__].validFrom"></label>
+                <label class="field">结束<input type="date" name="signatories[__INDEX__].validTo"></label>
+                <label class="field">依据
+                    <select th:replace="~{fragments/document-select :: named('signatories[IDX].basisDocumentId')}"></select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="link-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>项目</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="links[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">项目
+                    <select name="links[__INDEX__].projectId">
+                        <option value="">请选择</option>
+                        <option th:each="project : ${projectRows}" th:value="${project.id}"
+                                th:text="${project.projectCode + ' ' + project.name}"></option>
+                    </select>
+                </label>
+                <label class="field span-2">关系说明<input name="links[__INDEX__].relationshipNote"></label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -28,6 +28,7 @@ public class PersonService {
     private final CompanyShareholdingRepository shareholdings;
     private final SupplierLinkGuard supplierLinks;
     private final ProjectLinkGuard projectLinks;
+    private final ContractLinkGuard contractLinks;
 
     public List<Person> list() {
         return persons.findAllByOrderByNameAsc();
@@ -84,6 +85,9 @@ public class PersonService {
         }
         if (projectLinks.personUsed(id)) {
             throw new FieldErrorsException(java.util.Map.of("*", "该自然人仍被项目引用，不能删除"));
+        }
+        if (contractLinks.personUsed(id)) {
+            throw new FieldErrorsException(java.util.Map.of("*", "该自然人仍被合同引用，不能删除"));
         }
         persons.deleteById(id);
     }

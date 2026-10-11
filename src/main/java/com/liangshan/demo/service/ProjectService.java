@@ -66,6 +66,7 @@ public class ProjectService {
     private final EmployeeEmploymentRepository employments;
     private final EmployeeDepartmentAssignmentRepository assignments;
     private final SourceDocumentService documents;
+    private final ContractLinkGuard contractLinks;
 
     public record Row(
             Long id,
@@ -230,6 +231,9 @@ public class ProjectService {
     @Transactional
     public void delete(Long id) {
         get(id);
+        if (contractLinks.projectUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该项目仍关联合同，不能删除"));
+        }
         members.findByProjectIdOrderByIdAsc(id).forEach(members::delete);
         budgets.findByProjectIdOrderByVersionNumberAsc(id).forEach(budgets::delete);
         deliveries.findByProjectIdOrderByIdAsc(id).forEach(deliveries::delete);

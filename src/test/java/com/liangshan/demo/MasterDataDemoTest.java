@@ -18,11 +18,25 @@ import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
+import com.liangshan.demo.domain.Contract;
+import com.liangshan.demo.domain.ContractLine;
+import com.liangshan.demo.domain.ContractLineTermVersion;
+import com.liangshan.demo.domain.ContractStageDeliverable;
+import com.liangshan.demo.domain.ContractStageTermVersion;
+import com.liangshan.demo.domain.ContractTermVersion;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
 import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.repository.ContractLineRepository;
+import com.liangshan.demo.repository.ContractLineTermVersionRepository;
+import com.liangshan.demo.repository.ContractRepository;
+import com.liangshan.demo.repository.ContractStageDeliverableRepository;
+import com.liangshan.demo.repository.ContractStageRepository;
+import com.liangshan.demo.repository.ContractStageTermVersionRepository;
+import com.liangshan.demo.repository.ContractTermVersionRepository;
 import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.ProjectVersionRepository;
+import com.liangshan.demo.service.ContractService;
 import com.liangshan.demo.service.PersonService;
 import com.liangshan.demo.service.ProjectService;
 import com.liangshan.demo.service.SupplierService;
@@ -37,6 +51,12 @@ import com.liangshan.demo.web.form.SourceDocumentForm;
 import com.liangshan.demo.web.form.SupplierDetailForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
+import com.liangshan.demo.web.form.ContractAmendmentForm;
+import com.liangshan.demo.web.form.ContractDetailForm;
+import com.liangshan.demo.web.form.ContractDetailForm.DeliverableForm;
+import com.liangshan.demo.web.form.ContractDetailForm.LineForm;
+import com.liangshan.demo.web.form.ContractDetailForm.StageForm;
+import com.liangshan.demo.web.form.ContractForm;
 import com.liangshan.demo.web.form.ProjectDetailForm;
 import com.liangshan.demo.web.form.ProjectDetailForm.BudgetForm;
 import com.liangshan.demo.web.form.ProjectDetailForm.DeliveryForm;
@@ -68,6 +88,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -135,6 +156,22 @@ class MasterDataDemoTest {
     private ProjectVersionRepository projectVersions;
     @Autowired
     private ProjectBudgetVersionRepository projectBudgets;
+    @Autowired
+    private ContractService contractService;
+    @Autowired
+    private ContractRepository contractRepository;
+    @Autowired
+    private ContractTermVersionRepository contractTerms;
+    @Autowired
+    private ContractLineRepository contractLines;
+    @Autowired
+    private ContractLineTermVersionRepository contractLineTerms;
+    @Autowired
+    private ContractStageRepository contractStages;
+    @Autowired
+    private ContractStageTermVersionRepository contractStageTerms;
+    @Autowired
+    private ContractStageDeliverableRepository contractDeliverables;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -186,7 +223,36 @@ class MasterDataDemoTest {
                 "project_budget_version",
                 "project_version",
                 "project_delivery_company",
-                "project_support_department")));
+                "project_support_department",
+                "contract",
+                "contract_term_version",
+                "contract_line",
+                "contract_line_term_version",
+                "contract_amendment",
+                "contract_stage",
+                "contract_stage_term_version",
+                "contract_stage_deliverable",
+                "project_contract",
+                "contract_additional_signatory")));
+        assertEquals("integer", String.valueOf(column("contract_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("contract_stage_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(1, ((Number) column("contract", "contract_number").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "buyer_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "buyer_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "buyer_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "seller_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "seller_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "seller_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "supplier_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "contract_net_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "contract_tax_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract", "contract_gross_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_line_term_version", "line_net_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_line_term_version", "line_tax_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_line_term_version", "line_gross_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_additional_signatory", "signatory_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_additional_signatory", "signatory_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_additional_signatory", "signatory_person_id").get("notnull")).intValue());
         assertEquals("integer", String.valueOf(column("project_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("project", "owner_company_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("project", "customer_company_id").get("notnull")).intValue());
@@ -219,7 +285,8 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("供应商")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("基础管理")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("采购")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("项目管理")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("项目管理")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("条款、品项与阶段")));
     }
 
     @Test
@@ -783,6 +850,182 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("当前批准预算")));
     }
 
+    @Test
+    void contractRulesAmendmentsAndSupplierLock() throws Exception {
+        long buyer = companyForOrg("CT-BUYER", "合同买方公司");
+        long otherCompany = companyForOrg("CT-OTHER", "合同对照公司");
+        long sellerPerson = person("合同卖方");
+        long otherPerson = person("错配卖方");
+
+        ContractForm twoBuyers = contract("CT-TWO", "两个买方", "销售", buyer, sellerPerson);
+        twoBuyers.setBuyerPersonId(otherPerson);
+        assertTrue(messageOf(() -> contractService.save(twoBuyers)).contains("恰好"));
+
+        ContractForm noParties = contract("CT-NONE", "没有主体", "销售", buyer, sellerPerson);
+        noParties.setBuyerCompanyId(null);
+        noParties.setSellerPersonId(null);
+        assertTrue(messageOf(() -> contractService.save(noParties)).contains("恰好"));
+
+        ContractForm day = contract("CT-DAY", "当日总价", "销售", buyer, sellerPerson);
+        day.setContractGrossAmount(new BigDecimal("50.00"));
+        long dayId = contractService.save(day);
+        Contract storedDay = contractRepository.findById(dayId).orElseThrow();
+        assertNull(storedDay.contractNetAmount);
+        assertNull(storedDay.contractTaxAmount);
+        assertEquals(0, new BigDecimal("50.00").compareTo(storedDay.contractGrossAmount));
+        assertEquals(1, contractTerms.findByContractIdOrderByVersionNumberAsc(dayId).size());
+        assertNull(contractTerms.findByContractIdOrderByVersionNumberAsc(dayId).get(0).amendmentId);
+
+        ContractForm badMoney = contractService.form(dayId);
+        badMoney.setContractNetAmount(new BigDecimal("10.00"));
+        badMoney.setContractTaxAmount(new BigDecimal("1.00"));
+        badMoney.setContractGrossAmount(new BigDecimal("12.00"));
+        assertTrue(messageOf(() -> contractService.save(badMoney)).contains("含税价须等于不含税价加税额"));
+
+        ContractForm sameDay = contractService.form(dayId);
+        sameDay.setContractGrossAmount(new BigDecimal("60.00"));
+        contractService.save(sameDay);
+        List<ContractTermVersion> dayTerms = contractTerms.findByContractIdOrderByVersionNumberAsc(dayId);
+        assertEquals(1, dayTerms.size());
+        assertEquals(0, new BigDecimal("60.00").compareTo(dayTerms.get(0).contractGrossAmount));
+        assertNull(dayTerms.get(0).contractNetAmount);
+
+        SupplierForm archive = supplier("SP-CT", "寨外供货", buyer);
+        archive.setPersonId(sellerPerson);
+        long supplierId = supplierService.save(archive);
+        ContractForm salesWithSupplier = contract("CT-SALE-SUP", "销售误填档案", "销售", buyer, sellerPerson);
+        salesWithSupplier.setSupplierId(supplierId);
+        assertTrue(messageOf(() -> contractService.save(salesWithSupplier)).contains("非采购合同"));
+
+        ContractForm mismatch = contract("CT-BUY-BAD", "错配采购", "采购", buyer, otherPerson);
+        mismatch.setProcurementCompanyId(buyer);
+        mismatch.setSupplierId(supplierId);
+        assertTrue(messageOf(() -> contractService.save(mismatch)).contains("供货对象"));
+
+        ContractForm purchase = contract("CT-BUY", "寨外供货合同", "采购", buyer, sellerPerson);
+        purchase.setProcurementCompanyId(buyer);
+        purchase.setSupplierId(supplierId);
+        long purchaseId = contractService.save(purchase);
+        assertEquals(supplierId, contractRepository.findById(purchaseId).orElseThrow().supplierId);
+        assertTrue(SupplierUsageProbe.REFERENCED.isEmpty());
+
+        SupplierForm changeBuyer = supplierService.form(supplierId);
+        changeBuyer.setPurchasingCompanyId(otherCompany);
+        assertTrue(messageOf(() -> supplierService.save(changeBuyer)).contains("不能更换"));
+        SupplierForm changeObject = supplierService.form(supplierId);
+        changeObject.setPersonId(null);
+        changeObject.setCompanyId(otherCompany);
+        assertTrue(messageOf(() -> supplierService.save(changeObject)).contains("不能更换"));
+        assertTrue(messageOf(() -> supplierService.delete(supplierId)).contains("不能删除"));
+
+        ContractForm old = contract("CT-OLD", "寨内扩建施工合同", "销售", buyer, sellerPerson);
+        old.setValidFrom(LocalDate.now().minusDays(1));
+        old.setBuyerNameSnapshot("原买方");
+        old.setContractGrossAmount(new BigDecimal("100.00"));
+        long oldId = contractService.save(old);
+        ContractForm crossDay = contractService.form(oldId);
+        crossDay.setContractGrossAmount(new BigDecimal("110.00"));
+        assertTrue(messageOf(() -> contractService.save(crossDay)).contains("跨日变更条款"));
+        assertEquals(0, new BigDecimal("100.00").compareTo(
+                contractTerms.findByContractIdOrderByVersionNumberAsc(oldId).get(0).contractGrossAmount));
+
+        ContractDetailForm duplicateStages = new ContractDetailForm();
+        duplicateStages.getStages().add(stage("S1", 1));
+        duplicateStages.getStages().add(stage("S1", 2));
+        assertTrue(messageOf(() -> contractService.saveDetails(oldId, duplicateStages)).contains("阶段编号"));
+
+        ContractDetailForm details = new ContractDetailForm();
+        LineForm line = new LineForm();
+        line.setLineNumber(1);
+        line.setItemName("寨墙");
+        line.setUnit("项");
+        line.setLineGrossAmount(new BigDecimal("80.00"));
+        details.getLines().add(line);
+        StageForm stageRow = stage("S1", 1);
+        stageRow.setStageGrossAmount(new BigDecimal("80.00"));
+        details.getStages().add(stageRow);
+        DeliverableForm deliverable = new DeliverableForm();
+        deliverable.setStageCode("S1");
+        deliverable.setLineNumber(1);
+        deliverable.setDeliverableCode("DL-1");
+        deliverable.setDeliverableName("寨墙完工");
+        deliverable.setUnit("项");
+        deliverable.setPlannedQuantity(BigDecimal.ONE);
+        deliverable.setAcceptanceCriteria("可通行");
+        deliverable.setPlannedDeliveryDate(LocalDate.now().plusMonths(1));
+        details.getDeliverables().add(deliverable);
+        contractService.saveDetails(oldId, details);
+
+        SourceDocumentForm amendmentDocument = new SourceDocumentForm();
+        amendmentDocument.setDocumentType("合同变更");
+        amendmentDocument.setDocumentNumber("BG-WP06");
+        amendmentDocument.setStatus("有效");
+        long amendmentDocumentId = sourceDocuments.save(amendmentDocument);
+        ContractAmendmentForm amendment = new ContractAmendmentForm();
+        amendment.setAmendmentNumber("BG-1");
+        amendment.setSignedAt(LocalDate.now());
+        amendment.setEffectiveAt(LocalDate.now());
+        amendment.setSourceDocumentId(amendmentDocumentId);
+        amendment.setSummary("上调含税总价并改买方名称");
+        ContractForm amendedTerms = contractService.form(oldId);
+        amendedTerms.setBuyerNameSnapshot("新买方");
+        amendedTerms.setContractGrossAmount(new BigDecimal("180.00"));
+        amendment.setTerms(amendedTerms);
+        contractService.registerAmendment(oldId, amendment);
+
+        List<ContractTermVersion> history = contractTerms.findByContractIdOrderByVersionNumberAsc(oldId);
+        assertEquals(2, history.size());
+        assertNull(history.get(0).amendmentId);
+        assertNotNull(history.get(1).amendmentId);
+        assertEquals("原买方", history.get(0).buyerNameSnapshot);
+        assertEquals("新买方", history.get(1).buyerNameSnapshot);
+        assertEquals(buyer, history.get(0).buyerCompanyId);
+        assertEquals(sellerPerson, history.get(0).sellerPersonId);
+        assertEquals(0, new BigDecimal("100.00").compareTo(history.get(0).contractGrossAmount));
+        assertEquals(0, new BigDecimal("180.00").compareTo(history.get(1).contractGrossAmount));
+        assertEquals(LocalDate.now(), history.get(0).validTo);
+        assertEquals(LocalDate.now(), history.get(1).validFrom);
+        assertNull(history.get(0).contractNetAmount);
+        assertNull(history.get(0).contractTaxAmount);
+
+        List<ContractLine> lines = contractLines.findByContractIdOrderByLineNumberAsc(oldId);
+        assertEquals(1, lines.size());
+        List<ContractLineTermVersion> lineHistory = contractLineTerms.findByContractLineId(lines.get(0).id);
+        assertEquals(2, lineHistory.size());
+        assertTrue(lineHistory.stream().anyMatch(row -> row.validTo != null
+                && new BigDecimal("80.00").compareTo(row.lineGrossAmount) == 0));
+        assertTrue(lineHistory.stream().anyMatch(row -> row.validTo == null
+                && new BigDecimal("80.00").compareTo(row.lineGrossAmount) == 0));
+        assertFalse(lineHistory.get(0).id.equals(lineHistory.get(1).id));
+
+        var stages = contractStages.findByContractIdOrderBySequenceNoAsc(oldId);
+        assertEquals(1, stages.size());
+        List<ContractStageTermVersion> stageHistory = contractStageTerms.findByContractStageIdOrderByVersionNumberAsc(stages.get(0).id);
+        assertEquals(2, stageHistory.size());
+        assertNull(stageHistory.get(0).amendmentId);
+        assertNotNull(stageHistory.get(1).amendmentId);
+        List<ContractStageDeliverable> originalDeliverables =
+                contractDeliverables.findByStageTermVersionIdOrderByIdAsc(stageHistory.get(0).id);
+        List<ContractStageDeliverable> copiedDeliverables =
+                contractDeliverables.findByStageTermVersionIdOrderByIdAsc(stageHistory.get(1).id);
+        assertEquals("DL-1", originalDeliverables.get(0).deliverableCode);
+        assertEquals("DL-1", copiedDeliverables.get(0).deliverableCode);
+        assertFalse(originalDeliverables.get(0).id.equals(copiedDeliverables.get(0).id));
+
+        long projectId = projectService.save(project("CT-PJ", "寨内工程", buyer));
+        contractService.linkProject(projectId, oldId, "施工主合同");
+        mvc.perform(get("/projects/" + projectId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("寨内扩建施工合同")));
+        mvc.perform(get("/contracts"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("CT-OLD")));
+        mvc.perform(get("/contracts/" + oldId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("新买方")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("DL-1")));
+    }
+
     private String messageOf(Executable executable) {
         return assertThrows(FieldErrorsException.class, executable).getMessage();
     }
@@ -905,6 +1148,36 @@ class MasterDataDemoTest {
         form.getAssignments().add(assignment(job.getRowKey(), departmentId, LocalDate.of(2020, 1, 1), null));
         organizations.save(employeeId, form);
         return organizations.form(employeeId).getEmployments().get(0).getId();
+    }
+
+    private ContractForm contract(String number, String title, String type, long buyerCompanyId, long sellerPersonId) {
+        ContractForm form = new ContractForm();
+        form.setContractNumber(number);
+        form.setContractTitle(title);
+        form.setContractType(type);
+        form.setPricingMethod("固定总价");
+        form.setCurrency("CNY");
+        form.setBuyerCompanyId(buyerCompanyId);
+        form.setSellerPersonId(sellerPersonId);
+        form.setBuyerNameSnapshot("买方");
+        form.setSellerNameSnapshot("卖方");
+        form.setValidFrom(LocalDate.now());
+        form.setApprovalStatus("草稿");
+        form.setStatus("未生效");
+        return form;
+    }
+
+    private StageForm stage(String code, int sequence) {
+        StageForm row = new StageForm();
+        row.setStageCode(code);
+        row.setSequenceNo(sequence);
+        row.setStageName(code + "阶段");
+        row.setStatus("未开始");
+        row.setDeliverableDescription("按图施工");
+        row.setAcceptanceCriteria("验收通过");
+        row.setPlannedStartAt(LocalDate.now());
+        row.setPlannedDueAt(LocalDate.now().plusMonths(1));
+        return row;
     }
 
     private ProjectForm project(String code, String name, long ownerCompanyId) {

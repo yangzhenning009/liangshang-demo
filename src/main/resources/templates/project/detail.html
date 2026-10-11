@@ -25,6 +25,54 @@
         <p class="hint">成员的雇佣和任职必须是同一名员工，成员期间落在对应有效期内。预算金额留空表示尚未编制，不会按零加总。两项都填写后，总额为人工加非人工。</p>
     </section>
 
+    <section class="panel">
+        <h2>关联合同</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>名称</th>
+                    <th>说明</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${linkedContracts == null or linkedContracts.isEmpty()}">
+                    <td colspan="4" class="empty">还没有关联合同。合同的签约方以合同本身为准。</td>
+                </tr>
+                <tr th:each="link : ${linkedContracts}">
+                    <td th:text="${link.contractNumber}">CT</td>
+                    <td><a th:href="@{/contracts/{id}(id=${link.contractId})}" th:text="${link.contractTitle}">合同</a></td>
+                    <td th:text="${link.relationshipNote == null ? '未填写' : link.relationshipNote}">说明</td>
+                    <td>
+                        <form class="inline" method="post" th:action="@{/projects/{id}/contracts/{linkId}/delete(id=${header.id},linkId=${link.id})}">
+                            <button class="danger small" type="submit">解除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <form method="post" th:action="@{/projects/{id}/contracts(id=${header.id})}">
+            <div class="grid">
+                <label class="field">合同
+                    <select name="contractId">
+                        <option value="">请选择</option>
+                        <option th:each="contract : ${contractChoices}" th:value="${contract.id}"
+                                th:text="${contract.contractNumber + ' ' + contract.contractTitle}"></option>
+                    </select>
+                </label>
+                <label class="field">关系说明
+                    <input name="relationshipNote">
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit">关联合同</button>
+            </div>
+        </form>
+    </section>
+
     <form class="panel" th:object="${form}" method="post" th:action="@{/projects/{id}/details(id=${header.id})}">
         <div class="alert" th:if="${#fields.hasErrors()}">
             <strong>请修正后再保存</strong>

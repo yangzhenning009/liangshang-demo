@@ -44,6 +44,13 @@ public final class Codes {
     public static final List<String> PROJECT_ROLES = List.of("交付负责人", "设计", "实施", "其他");
     public static final List<String> BUDGET_COST_BASIS = List.of("标准人工", "工资成本");
     public static final List<String> BUDGET_APPROVAL_STATUS = List.of("草稿", "待审批", "已批准", "驳回");
+    public static final List<String> CONTRACT_TYPES = List.of("销售", "采购", "其他");
+    public static final List<String> PRICING_METHODS = List.of("固定总价", "按量", "按工时", "其他");
+    public static final List<String> CONTRACT_APPROVAL_STATUS = List.of("草稿", "待审批", "已批准", "驳回");
+    public static final List<String> CONTRACT_STATUS = List.of("未生效", "生效", "终止", "作废");
+    public static final List<String> STAGE_STATUS = List.of("未开始", "进行中", "完成", "取消");
+    public static final List<String> SIGNATORY_ROLES = List.of("担保", "见证", "其他");
+    public static final String CONTRACT_PROCUREMENT = "采购";
 
     private Codes() {
     }
