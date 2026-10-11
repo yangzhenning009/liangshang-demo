@@ -16,7 +16,7 @@
         <div class="alert" th:if="${#fields.hasErrors()}">
             <strong>请修正后再保存</strong>
             <ul>
-                <li th:each="err : ${#fields.allErrors()}" th:text="${err.message}">错误</li>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
             </ul>
         </div>
         <input type="hidden" th:field="*{id}">

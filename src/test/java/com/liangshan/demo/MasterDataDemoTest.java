@@ -247,6 +247,19 @@ class MasterDataDemoTest {
     }
 
     @Test
+    void companyFormRendersRuleErrors() throws Exception {
+        long legalId = legalPersons.save(legalPerson("校验法人"));
+        mvc.perform(post("/companies")
+                        .param("companyCode", "LS-ERR")
+                        .param("name", "缺形式")
+                        .param("companyType", "company")
+                        .param("status", "存续")
+                        .param("legalPersonId", String.valueOf(legalId)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("请选择公司形式")));
+    }
+
+    @Test
     void browserCanCreateLegalPerson() throws Exception {
         mvc.perform(post("/legal-persons")
                         .param("legalName", "页面法人")
