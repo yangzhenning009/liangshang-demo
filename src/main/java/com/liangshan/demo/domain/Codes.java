@@ -51,6 +51,18 @@ public final class Codes {
     public static final List<String> STAGE_STATUS = List.of("未开始", "进行中", "完成", "取消");
     public static final List<String> SIGNATORY_ROLES = List.of("担保", "见证", "其他");
     public static final String CONTRACT_PROCUREMENT = "采购";
+    public static final String TRIGGER_DATE = "指定日期";
+    public static final String TRIGGER_MANUAL = "人工确认";
+    public static final List<String> BILLING_TRIGGERS = List.of("指定日期", "签约", "阶段验收", "人工确认");
+    public static final List<String> PAYMENT_TRIGGERS = List.of("指定日期", "签约", "阶段验收", "开票", "人工确认");
+    public static final List<String> PAYMENT_PURPOSES = List.of("预付款", "进度款", "尾款", "质保金", "其他");
+    public static final String DELIVERY_SUBMITTED = "已提交";
+    public static final String DELIVERY_WITHDRAWN = "已撤回";
+    public static final List<String> DELIVERY_STATUS = List.of(DELIVERY_SUBMITTED, DELIVERY_WITHDRAWN);
+    public static final String ACCEPTANCE_EFFECTIVE = "有效";
+    public static final String ACCEPTANCE_REVOKED = "已撤销";
+    public static final List<String> ACCEPTANCE_STATUS = List.of(ACCEPTANCE_EFFECTIVE, ACCEPTANCE_REVOKED);
+    public static final List<String> ACCEPTANCE_RESULTS = List.of("通过", "不通过", "部分通过");
 
     private Codes() {
     }

@@ -11,6 +11,8 @@
             <p class="lede" th:text="${header.buyer + ' 向 ' + header.seller}">买卖双方</p>
         </div>
         <div class="form-actions">
+            <a class="btn secondary" th:href="@{/contracts/{id}/plans(id=${header.id})}">开票与收付款计划</a>
+            <a class="btn secondary" th:href="@{/contracts/{id}/performance(id=${header.id})}">交付与验收</a>
             <a class="btn secondary" th:href="@{/contracts/{id}/edit(id=${header.id})}">编辑档案</a>
             <a class="btn secondary" th:href="@{/contracts}">返回列表</a>
         </div>
@@ -25,6 +27,38 @@
             <span class="badge" th:text="${header.status}">状态</span>
         </p>
         <p class="hint">品项和阶段改的是当前未结束的条款。要改签约对象、总价或合同期间，且当前版本不是今天才开始的，请在下方登记变更。登记后会复制品项、阶段和交付项，原版本不改金额和签约方。</p>
+    </section>
+
+    <section class="panel">
+        <h2>履约进度</h2>
+        <p class="hint">累计按阶段和交付项编号汇总。复验通过后，原先不通过的数量不再留在累计不通过里，已通过的数量也不会再次计入。</p>
+        <div class="table-wrap" th:if="${progress != null and !progress.isEmpty()}">
+            <table>
+                <thead>
+                <tr>
+                    <th>阶段</th>
+                    <th>交付项</th>
+                    <th>单位</th>
+                    <th>约定</th>
+                    <th>累计交付</th>
+                    <th>累计通过</th>
+                    <th>累计不通过</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${progress}">
+                    <td th:text="${row.stageCode}">S1</td>
+                    <td th:text="${row.deliverableCode + ' ' + row.deliverableName}">DL-1</td>
+                    <td th:text="${row.unit}">项</td>
+                    <td th:text="${row.plannedQuantity}">10</td>
+                    <td th:text="${row.deliveredQuantity}">0</td>
+                    <td th:text="${row.acceptedQuantity}">0</td>
+                    <td th:text="${row.rejectedQuantity}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="hint" th:if="${progress == null or progress.isEmpty()}">还没有交付项。交付和验收在单独页面记录。</p>
     </section>
 
     <section class="panel">

@@ -7,6 +7,7 @@ import com.liangshan.demo.repository.SupplierRepository;
 import com.liangshan.demo.service.ContractService;
 import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.FieldErrorsException;
+import com.liangshan.demo.service.FulfillmentService;
 import com.liangshan.demo.service.LegalPersonService;
 import com.liangshan.demo.service.PersonService;
 import com.liangshan.demo.web.form.ContractAmendmentForm;
@@ -37,6 +38,7 @@ public class ContractController {
     private final EmployeeService employees;
     private final SupplierRepository suppliers;
     private final ProjectRepository projects;
+    private final FulfillmentService fulfillment;
 
     public ContractController(
             ContractService contracts,
@@ -45,7 +47,8 @@ public class ContractController {
             PersonService persons,
             EmployeeService employees,
             SupplierRepository suppliers,
-            ProjectRepository projects) {
+            ProjectRepository projects,
+            FulfillmentService fulfillment) {
         this.contracts = contracts;
         this.companies = companies;
         this.legalPersons = legalPersons;
@@ -53,6 +56,7 @@ public class ContractController {
         this.employees = employees;
         this.suppliers = suppliers;
         this.projects = projects;
+        this.fulfillment = fulfillment;
     }
 
     @ModelAttribute("activeNav")
@@ -228,6 +232,7 @@ public class ContractController {
         model.addAttribute("stageHistory", contracts.stageHistory(id));
         model.addAttribute("lineChoices", contracts.lineChoices(id));
         model.addAttribute("stageChoices", contracts.stageChoices(id));
+        model.addAttribute("progress", fulfillment.progress(id));
     }
 
     private List<String> messages(BindingResult binding) {

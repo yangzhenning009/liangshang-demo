@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>开票与收付款计划 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${header.contractNumber + ' 开票与收付款计划'}">计划</h1>
+            <p class="lede">计划金额是约定的结算额，不产生发票、应收或付款。</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:href="@{/contracts/{id}(id=${header.id})}">返回合同</a>
+            <a class="btn secondary" th:href="@{/contracts/{id}/performance(id=${header.id})}">交付与验收</a>
+        </div>
+    </div>
+    <form class="panel" th:object="${planForm}" method="post" th:action="@{/contracts/{id}/plans(id=${header.id})}">
+        <h2>开票计划</h2>
+        <p class="hint">指定日期要填计划开票日。签约、阶段验收和人工确认要填日历天数，并选择阶段。人工确认还要留下说明。被替代的原计划保留。</p>
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <div id="billing-rows">
+            <div class="repeat-row" th:each="row, stat : *{billings}">
+                <div class="row-tools">
+                    <strong th:text="${'开票 ' + (row.scheduleNumber == null ? '' : row.scheduleNumber)}">开票</strong>
+                    <label class="check"><input type="checkbox" th:field="*{billings[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{billings[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">序号
+                        <input type="number" min="1" th:field="*{billings[__${stat.index}__].scheduleNumber}">
+                    </label>
+                    <label class="field">条款版本
+                        <select th:field="*{billings[__${stat.index}__].contractTermVersionId}">
+                            <option value="">请选择</option>
+                            <option th:each="term : ${terms}" th:value="${term.id}"
+                                    th:text="${'版本 ' + term.versionNumber + (term.validTo == null ? ' 当前' : '')}"></option>
+                        </select>
+                    </label>
+                    <label class="field">阶段
+                        <select th:field="*{billings[__${stat.index}__].contractStageId}">
+                            <option value="">不关联</option>
+                            <option th:each="stage : ${stages}" th:value="${stage.id}"
+                                    th:text="${stage.stageCode + ' ' + stage.stageName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">触发
+                        <select th:field="*{billings[__${stat.index}__].billingTrigger}">
+                            <option value="">请选择</option>
+                            <option th:each="trigger : ${billingTriggers}" th:value="${trigger}" th:text="${trigger}"></option>
+                        </select>
+                    </label>
+                    <label class="field">计划含税金额
+                        <input type="number" step="0.01" min="0" th:field="*{billings[__${stat.index}__].plannedInvoiceGrossAmount}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{billings[__${stat.index}__].currency}" placeholder="如 CNY">
+                    </label>
+                    <label class="field">计划开票日
+                        <input type="date" th:field="*{billings[__${stat.index}__].plannedInvoiceDate}">
+                    </label>
+                    <label class="field">触发后天数
+                        <input type="number" min="0" th:field="*{billings[__${stat.index}__].daysAfterTrigger}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{billings[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{billings[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">替代原计划
+                        <select th:field="*{billings[__${stat.index}__].supersedesBillingScheduleId}">
+                            <option value="">不替代</option>
+                            <option th:each="existing : *{billings}" th:if="${existing.id != null}" th:value="${existing.id}"
+                                    th:text="${'序号 ' + existing.scheduleNumber}"></option>
+                        </select>
+                    </label>
+                    <label class="field span-2">触发说明
+                        <input th:field="*{billings[__${stat.index}__].triggerDescription}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('billing-rows','billing-template')">增加开票计划</button>
+
+        <h2>收付款计划</h2>
+        <p class="hint">相对触发的到期日留到以后的应收或应付上，这里只记天数和阶段。</p>
+        <div id="payment-rows">
+            <div class="repeat-row" th:each="row, stat : *{payments}">
+                <div class="row-tools">
+                    <strong th:text="${row.installmentName} ?: '收付款'">收付款</strong>
+                    <label class="check"><input type="checkbox" th:field="*{payments[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{payments[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">序号
+                        <input type="number" min="1" th:field="*{payments[__${stat.index}__].scheduleNumber}">
+                    </label>
+                    <label class="field">期次
+                        <input th:field="*{payments[__${stat.index}__].installmentName}">
+                    </label>
+                    <label class="field">用途
+                        <select th:field="*{payments[__${stat.index}__].paymentPurpose}">
+                            <option value="">请选择</option>
+                            <option th:each="purpose : ${paymentPurposes}" th:value="${purpose}" th:text="${purpose}"></option>
+                        </select>
+                    </label>
+                    <label class="field">触发
+                        <select th:field="*{payments[__${stat.index}__].paymentTrigger}">
+                            <option value="">请选择</option>
+                            <option th:each="trigger : ${paymentTriggers}" th:value="${trigger}" th:text="${trigger}"></option>
+                        </select>
+                    </label>
+                    <label class="field">条款版本
+                        <select th:field="*{payments[__${stat.index}__].contractTermVersionId}">
+                            <option value="">请选择</option>
+                            <option th:each="term : ${terms}" th:value="${term.id}"
+                                    th:text="${'版本 ' + term.versionNumber}"></option>
+                        </select>
+                    </label>
+                    <label class="field">阶段
+                        <select th:field="*{payments[__${stat.index}__].contractStageId}">
+                            <option value="">不关联</option>
+                            <option th:each="stage : ${stages}" th:value="${stage.id}"
+                                    th:text="${stage.stageCode + ' ' + stage.stageName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">计划金额
+                        <input type="number" step="0.01" min="0" th:field="*{payments[__${stat.index}__].plannedPaymentAmount}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{payments[__${stat.index}__].currency}" placeholder="如 CNY">
+                    </label>
+                    <label class="field">计划到期日
+                        <input type="date" th:field="*{payments[__${stat.index}__].plannedDueDate}">
+                    </label>
+                    <label class="field">触发后天数
+                        <input type="number" min="0" th:field="*{payments[__${stat.index}__].daysAfterTrigger}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{payments[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{payments[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">替代原计划
+                        <select th:field="*{payments[__${stat.index}__].supersedesPaymentScheduleId}">
+                            <option value="">不替代</option>
+                            <option th:each="existing : *{payments}" th:if="${existing.id != null}" th:value="${existing.id}"
+                                    th:text="${'序号 ' + existing.scheduleNumber}"></option>
+                        </select>
+                    </label>
+                    <label class="field span-2">触发说明
+                        <input th:field="*{payments[__${stat.index}__].triggerDescription}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('payment-rows','payment-template')">增加收付款计划</button>
+        <div class="form-actions">
+            <button type="submit">保存计划</button>
+        </div>
+    </form>
+    <div id="billing-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>开票</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="billings[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">序号<input type="number" min="1" name="billings[__INDEX__].scheduleNumber"></label>
+                <label class="field">条款版本
+                    <select name="billings[__INDEX__].contractTermVersionId">
+                        <option value="">请选择</option>
+                        <option th:each="term : ${terms}" th:value="${term.id}" th:text="${'版本 ' + term.versionNumber}"></option>
+                    </select>
+                </label>
+                <label class="field">阶段
+                    <select name="billings[__INDEX__].contractStageId">
+                        <option value="">不关联</option>
+                        <option th:each="stage : ${stages}" th:value="${stage.id}" th:text="${stage.stageCode + ' ' + stage.stageName}"></option>
+                    </select>
+                </label>
+                <label class="field">触发
+                    <select name="billings[__INDEX__].billingTrigger">
+                        <option value="">请选择</option>
+                        <option th:each="trigger : ${billingTriggers}" th:value="${trigger}" th:text="${trigger}"></option>
+                    </select>
+                </label>
+                <label class="field">计划含税金额<input type="number" step="0.01" min="0" name="billings[__INDEX__].plannedInvoiceGrossAmount"></label>
+                <label class="field">币种<input name="billings[__INDEX__].currency" placeholder="如 CNY"></label>
+                <label class="field">计划开票日<input type="date" name="billings[__INDEX__].plannedInvoiceDate"></label>
+                <label class="field">触发后天数<input type="number" min="0" name="billings[__INDEX__].daysAfterTrigger"></label>
+                <label class="field">开始<input type="date" name="billings[__INDEX__].validFrom"></label>
+                <label class="field">结束<input type="date" name="billings[__INDEX__].validTo"></label>
+                <label class="field">替代原计划
+                    <select name="billings[__INDEX__].supersedesBillingScheduleId">
+                        <option value="">不替代</option>
+                        <option th:each="existing : ${planForm.billings}" th:if="${existing.id != null}" th:value="${existing.id}"
+                                th:text="${'序号 ' + existing.scheduleNumber}"></option>
+                    </select>
+                </label>
+                <label class="field span-2">触发说明<input name="billings[__INDEX__].triggerDescription"></label>
+            </div>
+        </div>
+    </div>
+    <div id="payment-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>收付款</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="payments[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">序号<input type="number" min="1" name="payments[__INDEX__].scheduleNumber"></label>
+                <label class="field">期次<input name="payments[__INDEX__].installmentName"></label>
+                <label class="field">用途
+                    <select name="payments[__INDEX__].paymentPurpose">
+                        <option value="">请选择</option>
+                        <option th:each="purpose : ${paymentPurposes}" th:value="${purpose}" th:text="${purpose}"></option>
+                    </select>
+                </label>
+                <label class="field">触发
+                    <select name="payments[__INDEX__].paymentTrigger">
+                        <option value="">请选择</option>
+                        <option th:each="trigger : ${paymentTriggers}" th:value="${trigger}" th:text="${trigger}"></option>
+                    </select>
+                </label>
+                <label class="field">条款版本
+                    <select name="payments[__INDEX__].contractTermVersionId">
+                        <option value="">请选择</option>
+                        <option th:each="term : ${terms}" th:value="${term.id}" th:text="${'版本 ' + term.versionNumber}"></option>
+                    </select>
+                </label>
+                <label class="field">阶段
+                    <select name="payments[__INDEX__].contractStageId">
+                        <option value="">不关联</option>
+                        <option th:each="stage : ${stages}" th:value="${stage.id}" th:text="${stage.stageCode + ' ' + stage.stageName}"></option>
+                    </select>
+                </label>
+                <label class="field">计划金额<input type="number" step="0.01" min="0" name="payments[__INDEX__].plannedPaymentAmount"></label>
+                <label class="field">币种<input name="payments[__INDEX__].currency" placeholder="如 CNY"></label>
+                <label class="field">计划到期日<input type="date" name="payments[__INDEX__].plannedDueDate"></label>
+                <label class="field">触发后天数<input type="number" min="0" name="payments[__INDEX__].daysAfterTrigger"></label>
+                <label class="field">开始<input type="date" name="payments[__INDEX__].validFrom"></label>
+                <label class="field">结束<input type="date" name="payments[__INDEX__].validTo"></label>
+                <label class="field">替代原计划
+                    <select name="payments[__INDEX__].supersedesPaymentScheduleId">
+                        <option value="">不替代</option>
+                        <option th:each="existing : ${planForm.payments}" th:if="${existing.id != null}" th:value="${existing.id}"
+                                th:text="${'序号 ' + existing.scheduleNumber}"></option>
+                    </select>
+                </label>
+                <label class="field span-2">触发说明<input name="payments[__INDEX__].triggerDescription"></label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

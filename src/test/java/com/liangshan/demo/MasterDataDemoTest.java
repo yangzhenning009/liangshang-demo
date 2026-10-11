@@ -18,6 +18,8 @@ import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
+import com.liangshan.demo.domain.AcceptanceEvent;
+import com.liangshan.demo.domain.AcceptanceLine;
 import com.liangshan.demo.domain.Contract;
 import com.liangshan.demo.domain.ContractLine;
 import com.liangshan.demo.domain.ContractLineTermVersion;
@@ -26,7 +28,10 @@ import com.liangshan.demo.domain.ContractStageTermVersion;
 import com.liangshan.demo.domain.ContractTermVersion;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
 import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.repository.AcceptanceEventRepository;
+import com.liangshan.demo.repository.AcceptanceLineRepository;
 import com.liangshan.demo.repository.ContractLineRepository;
+import com.liangshan.demo.repository.DeliveryLineRepository;
 import com.liangshan.demo.repository.ContractLineTermVersionRepository;
 import com.liangshan.demo.repository.ContractRepository;
 import com.liangshan.demo.repository.ContractStageDeliverableRepository;
@@ -37,6 +42,7 @@ import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.ProjectVersionRepository;
 import com.liangshan.demo.service.ContractService;
+import com.liangshan.demo.service.FulfillmentService;
 import com.liangshan.demo.service.PersonService;
 import com.liangshan.demo.service.ProjectService;
 import com.liangshan.demo.service.SupplierService;
@@ -51,7 +57,10 @@ import com.liangshan.demo.web.form.SourceDocumentForm;
 import com.liangshan.demo.web.form.SupplierDetailForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
+import com.liangshan.demo.web.form.AcceptanceEventForm;
 import com.liangshan.demo.web.form.ContractAmendmentForm;
+import com.liangshan.demo.web.form.ContractPlanForm;
+import com.liangshan.demo.web.form.DeliveryEventForm;
 import com.liangshan.demo.web.form.ContractDetailForm;
 import com.liangshan.demo.web.form.ContractDetailForm.DeliverableForm;
 import com.liangshan.demo.web.form.ContractDetailForm.LineForm;
@@ -172,6 +181,14 @@ class MasterDataDemoTest {
     private ContractStageTermVersionRepository contractStageTerms;
     @Autowired
     private ContractStageDeliverableRepository contractDeliverables;
+    @Autowired
+    private FulfillmentService fulfillment;
+    @Autowired
+    private DeliveryLineRepository deliveryLines;
+    @Autowired
+    private AcceptanceEventRepository acceptanceEvents;
+    @Autowired
+    private AcceptanceLineRepository acceptanceLines;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -233,7 +250,13 @@ class MasterDataDemoTest {
                 "contract_stage_term_version",
                 "contract_stage_deliverable",
                 "project_contract",
-                "contract_additional_signatory")));
+                "contract_additional_signatory",
+                "contract_billing_schedule",
+                "contract_payment_schedule",
+                "delivery_event",
+                "delivery_line",
+                "acceptance_event",
+                "acceptance_line")));
         assertEquals("integer", String.valueOf(column("contract_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals("integer", String.valueOf(column("contract_stage_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("contract", "contract_number").get("notnull")).intValue());
@@ -273,6 +296,27 @@ class MasterDataDemoTest {
         assertEquals(1, ((Number) column("supplier_qualification", "has_no_expiry").get("notnull")).intValue());
         assertEquals(0, ((Number) column("supplier_qualification", "qualification_document_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("supplier_qualification", "expires_on").get("notnull")).intValue());
+        assertEquals("integer", String.valueOf(column("contract_billing_schedule", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("delivery_event", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("acceptance_event", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(0, ((Number) column("contract_billing_schedule", "contract_stage_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_billing_schedule", "supersedes_billing_schedule_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("contract_billing_schedule", "planned_invoice_gross_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_payment_schedule", "contract_stage_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("contract_payment_schedule", "supersedes_payment_schedule_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("contract_payment_schedule", "planned_payment_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("delivery_event", "submitter_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("delivery_event", "submitter_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("delivery_event", "submitter_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("delivery_event", "resubmission_of_delivery_event_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("delivery_line", "submitted_quantity").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("acceptance_event", "acceptor_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("acceptance_event", "acceptor_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("acceptance_event", "acceptor_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("acceptance_event", "supersedes_acceptance_event_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("acceptance_line", "reviewed_quantity").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("acceptance_line", "accepted_quantity").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("acceptance_line", "rejected_quantity").get("notnull")).intValue());
     }
 
     @Test
@@ -1024,6 +1068,197 @@ class MasterDataDemoTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("新买方")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("DL-1")));
+    }
+
+    @Test
+    void billingPaymentAndAcceptanceCumulatives() throws Exception {
+        long buyer = companyForOrg("FF-BUY", "履约买方公司");
+        long seller = person("履约卖方");
+        long contractId = contractService.save(contract("CT-FF", "寨墙交付合同", "销售", buyer, seller));
+        ContractDetailForm details = new ContractDetailForm();
+        LineForm line = new LineForm();
+        line.setLineNumber(1);
+        line.setItemName("寨墙");
+        line.setUnit("项");
+        details.getLines().add(line);
+        details.getStages().add(stage("S1", 1));
+        DeliverableForm deliverable = new DeliverableForm();
+        deliverable.setStageCode("S1");
+        deliverable.setLineNumber(1);
+        deliverable.setDeliverableCode("DL-1");
+        deliverable.setDeliverableName("寨墙完工");
+        deliverable.setUnit("项");
+        deliverable.setPlannedQuantity(new BigDecimal("10"));
+        deliverable.setAcceptanceCriteria("可通行");
+        deliverable.setPlannedDeliveryDate(LocalDate.now().plusMonths(1));
+        details.getDeliverables().add(deliverable);
+        contractService.saveDetails(contractId, details);
+
+        long projectId = projectService.save(project("FF-PJ", "寨墙工程", buyer));
+        contractService.linkProject(projectId, contractId, "施工");
+        long termId = contractTerms.findByContractIdOrderByVersionNumberAsc(contractId).get(0).id;
+        long stageId = contractStages.findByContractIdOrderBySequenceNoAsc(contractId).get(0).id;
+        long deliverableId = contractDeliverables.findByStageTermVersionIdOrderByIdAsc(
+                contractStageTerms.findByContractStageIdOrderByVersionNumberAsc(stageId).get(0).id).get(0).id;
+
+        ContractPlanForm missingDate = new ContractPlanForm();
+        missingDate.getBillings().add(billing(1, termId, null, "指定日期", "80.00"));
+        assertTrue(messageOf(() -> fulfillment.savePlans(contractId, missingDate)).contains("计划日期"));
+
+        ContractPlanForm missingStage = new ContractPlanForm();
+        ContractPlanForm.BillingRow stageTrigger = billing(1, termId, null, "阶段验收", "80.00");
+        stageTrigger.setDaysAfterTrigger(7);
+        missingStage.getBillings().add(stageTrigger);
+        assertTrue(messageOf(() -> fulfillment.savePlans(contractId, missingStage)).contains("阶段"));
+
+        ContractPlanForm missingTerm = new ContractPlanForm();
+        ContractPlanForm.BillingRow fakeTerm = billing(1, 9_999_999L, stageId, "阶段验收", "80.00");
+        fakeTerm.setDaysAfterTrigger(7);
+        missingTerm.getBillings().add(fakeTerm);
+        assertTrue(messageOf(() -> fulfillment.savePlans(contractId, missingTerm)).contains("条款版本"));
+
+        ContractPlanForm plans = new ContractPlanForm();
+        ContractPlanForm.BillingRow invoice = billing(1, termId, stageId, "阶段验收", "80.00");
+        invoice.setDaysAfterTrigger(15);
+        plans.getBillings().add(invoice);
+        ContractPlanForm.PaymentRow installment = payment(1, termId, stageId, "进度款", "阶段验收", "80.00");
+        installment.setDaysAfterTrigger(30);
+        plans.getPayments().add(installment);
+        fulfillment.savePlans(contractId, plans);
+
+        long deliveryId = fulfillment.recordDelivery(contractId, delivery(projectId, seller, "DV-1", deliverableId, "10"));
+        long lineId = deliveryLines.findByDeliveryEventIdOrderByIdAsc(deliveryId).get(0).id;
+        LocalDateTime firstAt = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        long firstAcceptanceId = fulfillment.recordAcceptance(contractId,
+                acceptance(deliveryId, buyer, "AC-1", firstAt, lineId, "10", "7", "3", "缝隙未齐"));
+
+        FulfillmentService.ProgressRow midway = progressOf(contractId);
+        assertEquals(0, new BigDecimal("10").compareTo(midway.deliveredQuantity()));
+        assertEquals(0, new BigDecimal("7").compareTo(midway.acceptedQuantity()));
+        assertEquals(0, new BigDecimal("3").compareTo(midway.rejectedQuantity()));
+        AcceptanceLine firstLine = acceptanceLines.findByAcceptanceEventIdOrderByIdAsc(firstAcceptanceId).get(0);
+        assertEquals(0, new BigDecimal("7").compareTo(firstLine.acceptedQuantity));
+        assertEquals("部分通过", acceptanceEvents.findById(firstAcceptanceId).orElseThrow().acceptanceResult);
+
+        assertTrue(messageOf(() -> fulfillment.recordAcceptance(contractId,
+                acceptance(deliveryId, buyer, "AC-OVER", firstAt.plusMinutes(1), lineId, "10", "10", "0", null)))
+                .contains("不能超过已交付"));
+        assertTrue(messageOf(() -> fulfillment.recordDelivery(contractId,
+                resubmit(projectId, seller, deliveryId, "DV-2", deliverableId, "10")))
+                .contains("重提"));
+
+        long secondAcceptanceId = fulfillment.recordAcceptance(contractId,
+                acceptance(deliveryId, buyer, "AC-2", firstAt.plusMinutes(2), lineId, "3", "3", "0", null));
+        FulfillmentService.ProgressRow done = progressOf(contractId);
+        assertEquals(0, new BigDecimal("10").compareTo(done.deliveredQuantity()));
+        assertEquals(0, new BigDecimal("10").compareTo(done.acceptedQuantity()));
+        assertEquals(0, new BigDecimal("0").compareTo(done.rejectedQuantity()));
+        assertEquals(0, new BigDecimal("7").compareTo(
+                acceptanceLines.findByAcceptanceEventIdOrderByIdAsc(firstAcceptanceId).get(0).acceptedQuantity));
+        assertEquals(0, new BigDecimal("3").compareTo(
+                acceptanceLines.findByAcceptanceEventIdOrderByIdAsc(secondAcceptanceId).get(0).acceptedQuantity));
+        assertEquals("通过", acceptanceEvents.findById(secondAcceptanceId).orElseThrow().acceptanceResult);
+        assertEquals(2, acceptanceEvents.findByDeliveryEventIdOrderByAcceptedAtAscIdAsc(deliveryId).size());
+        assertTrue(messageOf(() -> fulfillment.recordAcceptance(contractId,
+                acceptance(deliveryId, buyer, "AC-3", firstAt.plusMinutes(3), lineId, "1", "1", "0", null)))
+                .contains("不能超过已交付"));
+        assertTrue(messageOf(() -> contractService.delete(contractId)).contains("不能删除"));
+
+        mvc.perform(get("/contracts/" + contractId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("履约进度")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("累计通过")));
+        mvc.perform(get("/contracts/" + contractId + "/performance"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("累计交付")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("累计不通过")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("DL-1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("AC-1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("部分通过")));
+        mvc.perform(get("/contracts/" + contractId + "/plans"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("开票计划")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("收付款计划")));
+    }
+
+    private FulfillmentService.ProgressRow progressOf(long contractId) {
+        return fulfillment.progress(contractId).stream()
+                .filter(row -> "DL-1".equals(row.deliverableCode()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private ContractPlanForm.BillingRow billing(int number, Long termId, Long stageId, String trigger, String amount) {
+        ContractPlanForm.BillingRow row = new ContractPlanForm.BillingRow();
+        row.setScheduleNumber(number);
+        row.setContractTermVersionId(termId);
+        row.setContractStageId(stageId);
+        row.setBillingTrigger(trigger);
+        row.setPlannedInvoiceGrossAmount(new BigDecimal(amount));
+        row.setCurrency("CNY");
+        row.setValidFrom(LocalDate.now());
+        return row;
+    }
+
+    private ContractPlanForm.PaymentRow payment(
+            int number, Long termId, Long stageId, String purpose, String trigger, String amount) {
+        ContractPlanForm.PaymentRow row = new ContractPlanForm.PaymentRow();
+        row.setScheduleNumber(number);
+        row.setContractTermVersionId(termId);
+        row.setContractStageId(stageId);
+        row.setInstallmentName("第" + number + "期");
+        row.setPaymentPurpose(purpose);
+        row.setPaymentTrigger(trigger);
+        row.setPlannedPaymentAmount(new BigDecimal(amount));
+        row.setCurrency("CNY");
+        row.setValidFrom(LocalDate.now());
+        return row;
+    }
+
+    private DeliveryEventForm delivery(long projectId, long personId, String number, long deliverableId, String quantity) {
+        DeliveryEventForm form = new DeliveryEventForm();
+        form.setProjectId(projectId);
+        form.setSubmitterPersonId(personId);
+        form.setDeliveryNumber(number);
+        form.setSubmittedAt(LocalDateTime.now());
+        form.setDeliverableDescription("寨墙完工提交");
+        DeliveryEventForm.Line line = new DeliveryEventForm.Line();
+        line.setStageDeliverableId(deliverableId);
+        line.setSubmittedQuantity(new BigDecimal(quantity));
+        form.getLines().add(line);
+        return form;
+    }
+
+    private DeliveryEventForm resubmit(
+            long projectId, long personId, long ancestorId, String number, long deliverableId, String quantity) {
+        DeliveryEventForm form = delivery(projectId, personId, number, deliverableId, quantity);
+        form.setResubmissionOfDeliveryEventId(ancestorId);
+        return form;
+    }
+
+    private AcceptanceEventForm acceptance(
+            long deliveryId,
+            long companyId,
+            String number,
+            LocalDateTime acceptedAt,
+            long lineId,
+            String reviewed,
+            String accepted,
+            String rejected,
+            String reason) {
+        AcceptanceEventForm form = new AcceptanceEventForm();
+        form.setDeliveryEventId(deliveryId);
+        form.setAcceptorCompanyId(companyId);
+        form.setAcceptanceNumber(number);
+        form.setAcceptedAt(acceptedAt);
+        AcceptanceEventForm.Line line = new AcceptanceEventForm.Line();
+        line.setDeliveryLineId(lineId);
+        line.setReviewedQuantity(new BigDecimal(reviewed));
+        line.setAcceptedQuantity(new BigDecimal(accepted));
+        line.setRejectedQuantity(new BigDecimal(rejected));
+        line.setRejectionReason(reason);
+        form.getLines().add(line);
+        return form;
     }
 
     private String messageOf(Executable executable) {

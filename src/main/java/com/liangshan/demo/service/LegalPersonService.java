@@ -41,6 +41,7 @@ public class LegalPersonService {
     private final SupplierLinkGuard supplierLinks;
     private final ProjectLinkGuard projectLinks;
     private final ContractLinkGuard contractLinks;
+    private final FulfillmentLinkGuard fulfillmentLinks;
 
     public List<LegalPerson> list() {
         return legalPersons.findAllByOrderByLegalNameAsc();
@@ -128,6 +129,9 @@ public class LegalPersonService {
         }
         if (contractLinks.legalPersonUsed(id)) {
             throw new FieldErrorsException(java.util.Map.of("*", "该法人仍被合同引用，不能删除"));
+        }
+        if (fulfillmentLinks.legalPersonUsed(id)) {
+            throw new FieldErrorsException(java.util.Map.of("*", "该法人仍被交付或验收引用，不能删除"));
         }
         registrations.findByLegalPersonIdOrderByValidFromAsc(id).forEach(registrations::delete);
         terms.findByLegalPersonIdOrderByValidFromAsc(id).forEach(terms::delete);

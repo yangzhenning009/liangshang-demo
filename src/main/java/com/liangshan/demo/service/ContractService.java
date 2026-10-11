@@ -77,6 +77,7 @@ public class ContractService {
     private final SupplierRepository suppliers;
     private final ProjectRepository projects;
     private final SourceDocumentService documents;
+    private final FulfillmentLinkGuard fulfillmentLinks;
 
     public record Row(
             Long id,
@@ -459,6 +460,9 @@ public class ContractService {
     @Transactional
     public void delete(Long id) {
         get(id);
+        if (fulfillmentLinks.contractUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该合同已有开票计划、收付款计划或交付记录，不能删除"));
+        }
         for (ContractStage stage : stages.findByContractIdOrderBySequenceNoAsc(id)) {
             for (ContractStageTermVersion term : stageTerms.findByContractStageIdOrderByVersionNumberAsc(stage.id)) {
                 deliverables.findByStageTermVersionIdOrderByIdAsc(term.id).forEach(deliverables::delete);
@@ -845,6 +849,9 @@ public class ContractService {
             if (kept.contains(existing.id)) {
                 continue;
             }
+            if (fulfillmentLinks.stageUsed(existing.id)) {
+                throw new FieldErrorsException(Map.of("*", "该阶段已有开票计划、收付款计划或交付记录，不能删除"));
+            }
             for (ContractStageTermVersion term : stageTerms.findByContractStageIdOrderByVersionNumberAsc(existing.id)) {
                 deliverables.findByStageTermVersionIdOrderByIdAsc(term.id).forEach(deliverables::delete);
                 stageTerms.delete(term);
@@ -905,6 +912,9 @@ public class ContractService {
         for (ContractStageTermVersion term : openTerms.values()) {
             for (ContractStageDeliverable existing : deliverables.findByStageTermVersionIdOrderByIdAsc(term.id)) {
                 if (!kept.contains(existing.id)) {
+                    if (fulfillmentLinks.deliverableUsed(existing.id)) {
+                        throw new FieldErrorsException(Map.of("*", "该交付项已有交付记录，不能删除"));
+                    }
                     deliverables.delete(existing);
                 }
             }

@@ -58,6 +58,7 @@ public class CompanyService {
     private final SupplierLinkGuard supplierLinks;
     private final ProjectLinkGuard projectLinks;
     private final ContractLinkGuard contractLinks;
+    private final FulfillmentLinkGuard fulfillmentLinks;
 
     public record CompanyRow(
             Long id,
@@ -178,6 +179,9 @@ public class CompanyService {
         }
         if (contractLinks.companyUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该公司仍被合同引用，不能删除"));
+        }
+        if (fulfillmentLinks.companyUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该公司仍被交付或验收引用，不能删除"));
         }
         registrations.findByCompanyIdOrderByVersionNumberAsc(id).forEach(registrations::delete);
         bankAccounts.findByCompanyIdOrderByIdAsc(id).forEach(bankAccounts::delete);
