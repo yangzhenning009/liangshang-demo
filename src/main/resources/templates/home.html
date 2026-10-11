@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>梁山集团 · 主数据</title>
+</head>
+<body>
+<main>
+    <section class="hero">
+        <h1>主数据工作台</h1>
+        <p class="lede">法人、公司、自然人、员工和部门各自有主键。公司与分公司都记在 company 上，用 company_type 区分：公司填写自己的法人，分公司填写总公司，子公司仍是公司类型，股权写在股东明细里。</p>
+    </section>
+    <section class="cards">
+        <a class="card" th:href="@{/legal-persons}">
+            <em>法人</em>
+            <strong th:text="${legalPersonCount}">0</strong>
+            法律名称与存续
+        </a>
+        <a class="card" th:href="@{/companies}">
+            <em>公司 / 分公司</em>
+            <strong th:text="${companyCount}">0</strong>
+            登记、账户、股东、版本
+        </a>
+        <a class="card" th:href="@{/persons}">
+            <em>自然人</em>
+            <strong th:text="${personCount}">0</strong>
+            姓名与个人联系方式
+        </a>
+        <a class="card" th:href="@{/employees}">
+            <em>员工</em>
+            <strong th:text="${employeeCount}">0</strong>
+            一人一份员工档案
+        </a>
+        <a class="card" th:href="@{/departments}">
+            <em>部门</em>
+            <strong th:text="${departmentCount}">0</strong>
+            直接归属公司或分公司
+        </a>
+    </section>
+    <section class="panel">
+        <h2>这一版能做什么</h2>
+        <ul class="rules">
+            <li>维护五类主数据，并在公司下管理登记版本、银行账户、股东明细和公司版本。</li>
+            <li>法人可登记非公司证照和法定代表人任期。已经关联公司的法人，证照只在公司登记里维护。</li>
+            <li>公司类型必须有法人且总公司留空；分公司必须指向一家公司类型的总公司，法人、公司形式和股东留空。</li>
+            <li>未知号码留空，不写占位空串。信用代码、税号和注册号按主体去重，同一家公司的信用代码与税号可以相同。</li>
+        </ul>
+        <p class="hint">雇佣、部门任职和汇报线还没有页面。供应商、项目、合同和财务对象也不在这一版。</p>
+    </section>
+</main>
+</body>
+</html>

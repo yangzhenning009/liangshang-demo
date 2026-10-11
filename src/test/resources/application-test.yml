@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:target/test-liangshan.db
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        column_ordering_strategy: legacy
+  thymeleaf:
+    cache: false

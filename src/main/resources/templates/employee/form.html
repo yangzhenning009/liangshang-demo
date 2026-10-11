@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>员工 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建员工' : '编辑员工'">编辑员工</h1>
+            <p class="lede">一名自然人只能有一份员工档案。下拉框只列出尚未建档的自然人，以及当前档案已关联的人。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/employees}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="@{/employees}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err.message}">错误</li>
+            </ul>
+        </div>
+        <p class="hint" th:if="${selectablePersons.isEmpty()}">没有可关联的自然人。请先到自然人页面建档。</p>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">自然人
+                <select th:field="*{personId}">
+                    <option value="">请选择</option>
+                    <option th:each="person : ${selectablePersons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">员工编号
+                <input th:field="*{employeeCode}" required>
+            </label>
+            <label class="field">档案状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${employeeStatuses}" th:value="${status}" th:text="${status}">有效</option>
+                </select>
+            </label>
+            <label class="field">工作邮箱
+                <input th:field="*{workEmail}">
+            </label>
+            <label class="field">工作电话
+                <input th:field="*{workPhone}">
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

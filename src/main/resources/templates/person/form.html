@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>自然人 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建自然人' : '编辑自然人'">编辑自然人</h1>
+            <p class="lede">只记录自然人本人的姓名和联系方式。员工编号写在员工档案里。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/persons}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="@{/persons}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err.message}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">姓名
+                <input th:field="*{name}" required>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${personStatuses}" th:value="${status}" th:text="${status}">有效</option>
+                </select>
+            </label>
+            <label class="field">手机
+                <input th:field="*{mobilePhone}" placeholder="未知则留空">
+            </label>
+            <label class="field">邮箱
+                <input th:field="*{email}" placeholder="未知则留空">
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

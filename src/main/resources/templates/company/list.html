@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>公司 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>公司与分公司</h1>
+            <p class="lede">每家公司、每家分公司各有一条记录。当前统一社会信用代码来自未结束的登记版本。</p>
+        </div>
+        <a class="btn" th:href="@{/companies/new}">新建公司</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>业务名称</th>
+                    <th>类型</th>
+                    <th>归属</th>
+                    <th>信用代码</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="7" class="empty">还没有公司。可以先建总公司，再挂分公司。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.companyCode}">LS</td>
+                    <td th:text="${item.name}">梁山集团</td>
+                    <td th:text="${@labels.companyType(item.companyType)}">公司</td>
+                    <td th:text="${item.affiliation}">法人</td>
+                    <td th:text="${@labels.dash(item.unifiedSocialCreditCode)}">—</td>
+                    <td><span class="badge" th:text="${item.status}">存续</span></td>
+                    <td class="actions">
+                        <a th:href="@{/companies/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/companies/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('删除该公司及其登记、账户、股东和版本？仍被分公司或部门引用时会拒绝。');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

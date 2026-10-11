@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>部门 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建部门' : '编辑部门'">编辑部门</h1>
+            <p class="lede">所属公司记的是这家部门直接挂靠的公司或分公司。名称和归属变化会写入部门版本；服务公司是另外的范围，不是行政上级。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/departments}">返回列表</a>
+    </div>
+    <form class="panel department-form" th:object="${form}" th:action="@{/departments}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err.message}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <h2>当前部门</h2>
+        <div class="grid">
+            <label class="field">所属公司
+                <select th:field="*{companyId}">
+                    <option value="">请选择</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name + '（' + @labels.companyType(company.companyType) + '）'}"></option>
+                </select>
+            </label>
+            <label class="field">上级部门
+                <select th:field="*{parentDepartmentId}">
+                    <option value="">无上级</option>
+                    <option th:each="dept : ${departments}"
+                            th:if="${form.id == null or dept.id != form.id}"
+                            th:value="${dept.id}"
+                            th:text="${dept.departmentCode + ' ' + dept.name}"
+                            th:attr="data-company=${dept.companyId}"></option>
+                </select>
+            </label>
+            <label class="field">部门编号
+                <input th:field="*{departmentCode}" required>
+            </label>
+            <label class="field">名称
+                <input th:field="*{name}" required>
+            </label>
+            <label class="field">部门类型
+                <select th:field="*{departmentType}">
+                    <option th:each="type : ${departmentTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${departmentStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">负责人
+                <select th:field="*{departmentHeadEmployeeId}">
+                    <option value="">未指定</option>
+                    <option th:each="entry : ${headLabels}" th:value="${entry.key}" th:text="${entry.value}"></option>
+                </select>
+            </label>
+            <label class="field">部门电话
+                <input th:field="*{departmentContactPhone}">
+            </label>
+            <label class="field">部门邮箱
+                <input th:field="*{departmentContactEmail}">
+            </label>
+            <label class="field">生效日
+                <input type="date" th:field="*{validFrom}" required>
+            </label>
+            <label class="field">结束日
+                <input type="date" th:field="*{validTo}">
+            </label>
+        </div>
+
+        <h2>服务公司</h2>
+        <p class="hint">共享部门可以服务其他公司或分公司。行政归属仍以所属公司为准。</p>
+        <div id="service-rows">
+            <div class="repeat-row" th:each="row, stat : *{serviceCompanies}">
+                <div class="row-tools">
+                    <strong>服务范围</strong>
+                    <label class="check"><input type="checkbox" th:field="*{serviceCompanies[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{serviceCompanies[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">服务公司
+                        <select th:field="*{serviceCompanies[__${stat.index}__].serviceCompanyId}">
+                            <option value="">请选择</option>
+                            <option th:each="company : ${companies}" th:value="${company.id}"
+                                    th:text="${company.companyCode + ' ' + company.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{serviceCompanies[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{serviceCompanies[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据文档 ID
+                        <input type="number" th:field="*{serviceCompanies[__${stat.index}__].basisDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('service-rows','service-template')">增加服务公司</button>
+
+        <h2>部门版本</h2>
+        <p class="hint">保存时维护一条当前版本，核心字段与上面的主记录一致。生效日早于今天的当前版本若主记录已变，会自动截断并生成新版本。</p>
+        <div id="dept-version-rows">
+            <div class="repeat-row" th:each="row, stat : *{versions}">
+                <div class="row-tools">
+                    <strong th:text="'版本 ' + ${row.versionNumber}">版本</strong>
+                    <label class="check"><input type="checkbox" th:field="*{versions[__${stat.index}__].removed}"> 删除误录</label>
+                </div>
+                <input type="hidden" th:field="*{versions[__${stat.index}__].id}">
+                <input type="hidden" th:field="*{versions[__${stat.index}__].versionNumber}">
+                <div class="grid">
+                    <label class="field">生效日
+                        <input type="date" th:field="*{versions[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束日
+                        <input type="date" th:field="*{versions[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据文档 ID
+                        <input type="number" th:field="*{versions[__${stat.index}__].basisDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="hint" th:if="${form.versions.isEmpty()}">首次保存会按部门生效日生成第 1 版。</p>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+
+    <div id="service-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>服务范围</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="serviceCompanies[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">服务公司
+                    <select name="serviceCompanies[__INDEX__].serviceCompanyId">
+                        <option value="">请选择</option>
+                        <option th:each="company : ${companies}" th:value="${company.id}"
+                                th:text="${company.companyCode + ' ' + company.name}"></option>
+                    </select>
+                </label>
+                <label class="field">开始
+                    <input type="date" name="serviceCompanies[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="serviceCompanies[__INDEX__].validTo">
+                </label>
+                <label class="field">依据文档 ID
+                    <input type="number" name="serviceCompanies[__INDEX__].basisDocumentId">
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

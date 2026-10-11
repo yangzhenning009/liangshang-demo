@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>部门 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>部门</h1>
+            <p class="lede">部门直接属于某一家公司或分公司。上级部门必须在同一条公司记录下，层级不能成环。</p>
+        </div>
+        <a class="btn" th:href="@{/departments/new}">新建部门</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>所属</th>
+                    <th>上级</th>
+                    <th>负责人</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="8" class="empty">还没有部门。所属公司可以是总公司，也可以是分公司自身。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.departmentCode}">HQ-CEO</td>
+                    <td th:text="${item.name}">总经办</td>
+                    <td th:text="${item.departmentType}">部门</td>
+                    <td th:text="${item.companyName}">公司</td>
+                    <td th:text="${item.parentName}">—</td>
+                    <td th:text="${item.headLabel}">—</td>
+                    <td><span class="badge" th:text="${item.status}">有效</span></td>
+                    <td class="actions">
+                        <a th:href="@{/departments/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/departments/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('删除该部门及其版本和服务范围？仍有下级部门时会拒绝。');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

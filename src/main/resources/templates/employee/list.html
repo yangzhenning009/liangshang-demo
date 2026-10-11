@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>员工 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>员工</h1>
+            <p class="lede">员工是独立人事档案，通过 person_id 对应一名自然人。姓名以自然人记录为准。入离职和任职不在这一页。</p>
+        </div>
+        <a class="btn" th:href="@{/employees/new}">新建员工</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>员工编号</th>
+                    <th>自然人</th>
+                    <th>工作邮箱</th>
+                    <th>工作电话</th>
+                    <th>档案状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="6" class="empty">还没有员工。请先建立自然人，再开员工档案。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.employeeCode}">E001</td>
+                    <td th:text="${item.personName}">宋江</td>
+                    <td th:text="${@labels.dash(item.workEmail)}">—</td>
+                    <td th:text="${@labels.dash(item.workPhone)}">—</td>
+                    <td><span class="badge" th:text="${item.status}">有效</span></td>
+                    <td class="actions">
+                        <a th:href="@{/employees/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/employees/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('删除该员工档案？仍被部门引用为负责人时会拒绝。');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

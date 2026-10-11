@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>公司 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建公司' : '编辑公司'">编辑公司</h1>
+            <p class="lede">公司填写法人并留空总公司；分公司填写总公司，法人和公司形式留空。证照、税号、注册资本和营业期限以未结束的登记版本为准，保存时写回主记录。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/companies}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="@{/companies}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err.message}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <h2>基本资料</h2>
+        <div class="grid">
+            <label class="field">公司编号
+                <input th:field="*{companyCode}" required>
+            </label>
+            <label class="field">业务名称
+                <input th:field="*{name}" required>
+            </label>
+            <label class="field">公司类型
+                <select th:field="*{companyType}">
+                    <option th:each="type : ${companyTypes}" th:value="${type}" th:text="${@labels.companyType(type)}"></option>
+                </select>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${companyStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">法人
+                <select th:field="*{legalPersonId}">
+                    <option value="">分公司留空</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">总公司
+                <select th:field="*{headCompanyId}">
+                    <option value="">公司留空</option>
+                    <option th:each="head : ${headCompanies}" th:value="${head.id}"
+                            th:text="${head.companyCode + ' ' + head.name}"></option>
+                </select>
+            </label>
+            <label class="field">公司形式
+                <select th:field="*{companyForm}">
+                    <option value="">分公司留空</option>
+                    <option th:each="formName : ${companyForms}" th:value="${formName}" th:text="${formName}"></option>
+                </select>
+            </label>
+            <label class="field">联系电话
+                <input th:field="*{contactPhone}">
+            </label>
+            <label class="field">邮箱
+                <input th:field="*{contactEmail}">
+            </label>
+            <label class="field span-2">办公地址
+                <input th:field="*{businessAddress}">
+            </label>
+            <label class="field">成立日期
+                <input type="date" th:field="*{establishedAt}">
+            </label>
+            <label class="field">终止日期
+                <input type="date" th:field="*{terminatedAt}">
+            </label>
+        </div>
+
+        <h2>登记版本</h2>
+        <p class="hint">每家公司、分公司记自己的证照。中国信用代码和税号按 18 位校验，两者可以相同。分公司不填注册资本。生效日早于今天的当前登记若内容变化，会截断旧版本。</p>
+        <div id="reg-rows">
+            <div class="repeat-row" th:each="row, stat : *{registrations}">
+                <div class="row-tools">
+                    <strong th:text="'登记 v' + ${row.versionNumber}">登记</strong>
+                    <label class="check"><input type="checkbox" th:field="*{registrations[__${stat.index}__].removed}"> 删除误录</label>
+                </div>
+                <input type="hidden" th:field="*{registrations[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">版本号
+                        <input type="number" min="1" th:field="*{registrations[__${stat.index}__].versionNumber}">
+                    </label>
+                    <label class="field">登记类型
+                        <select th:field="*{registrations[__${stat.index}__].registrationType}">
+                            <option value="">请选择</option>
+                            <option th:each="type : ${registrationTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                    </label>
+                    <label class="field">登记状态
+                        <select th:field="*{registrations[__${stat.index}__].registrationStatus}">
+                            <option value="">请选择</option>
+                            <option th:each="status : ${registrationStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="field">统一社会信用代码
+                        <input th:field="*{registrations[__${stat.index}__].unifiedSocialCreditCode}">
+                    </label>
+                    <label class="field">营业执照注册号
+                        <input th:field="*{registrations[__${stat.index}__].businessLicenseRegistrationNumber}">
+                    </label>
+                    <label class="field">纳税人识别号
+                        <input th:field="*{registrations[__${stat.index}__].taxpayerIdentificationNumber}">
+                    </label>
+                    <label class="field">登记机关
+                        <input th:field="*{registrations[__${stat.index}__].registrationAuthority}">
+                    </label>
+                    <label class="field">登记国家／地区
+                        <input th:field="*{registrations[__${stat.index}__].registrationJurisdiction}" placeholder="例如：中国">
+                    </label>
+                    <label class="field">登记名称
+                        <input th:field="*{registrations[__${stat.index}__].registeredName}">
+                    </label>
+                    <label class="field span-2">注册地址
+                        <input th:field="*{registrations[__${stat.index}__].registeredAddress}">
+                    </label>
+                    <label class="field span-2">经营范围
+                        <textarea th:field="*{registrations[__${stat.index}__].businessScope}"></textarea>
+                    </label>
+                    <label class="field">登记日期
+                        <input type="date" th:field="*{registrations[__${stat.index}__].registeredAt}">
+                    </label>
+                    <label class="field">生效日
+                        <input type="date" th:field="*{registrations[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束日
+                        <input type="date" th:field="*{registrations[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">注册资本
+                        <input type="number" step="0.01" th:field="*{registrations[__${stat.index}__].registeredCapitalAmount}">
+                    </label>
+                    <label class="field">资本币种
+                        <input th:field="*{registrations[__${stat.index}__].registeredCapitalCurrency}" placeholder="CNY">
+                    </label>
+                    <label class="field">营业期限起
+                        <input type="date" th:field="*{registrations[__${stat.index}__].businessTermStartDate}">
+                    </label>
+                    <label class="field">营业期限止
+                        <input type="date" th:field="*{registrations[__${stat.index}__].businessTermEndDate}">
+                    </label>
+                    <label class="field">长期经营
+                        <select th:field="*{registrations[__${stat.index}__].businessTermIndefinite}">
+                            <option value="">未知</option>
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </label>
+                    <label class="field">分公司负责人
+                        <select th:field="*{registrations[__${stat.index}__].branchManagerPersonId}">
+                            <option value="">公司留空</option>
+                            <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">营业执照材料 ID
+                        <input type="number" th:field="*{registrations[__${stat.index}__].businessLicenseDocumentId}">
+                    </label>
+                    <label class="field">税号材料 ID
+                        <input type="number" th:field="*{registrations[__${stat.index}__].taxInformationSourceDocumentId}">
+                    </label>
+                    <label class="field">来源材料 ID
+                        <input type="number" th:field="*{registrations[__${stat.index}__].sourceDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('reg-rows','reg-template')">增加登记版本</button>
+
+        <h2>银行账户</h2>
+        <p class="hint">公司与分公司各自维护账户。账号用字符串保存，至少标明收款或付款用途之一。</p>
+        <div id="bank-rows">
+            <div class="repeat-row" th:each="row, stat : *{bankAccounts}">
+                <div class="row-tools">
+                    <strong>账户</strong>
+                    <label class="check"><input type="checkbox" th:field="*{bankAccounts[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{bankAccounts[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">户名
+                        <input th:field="*{bankAccounts[__${stat.index}__].bankAccountName}">
+                    </label>
+                    <label class="field">账号
+                        <input th:field="*{bankAccounts[__${stat.index}__].bankAccountNumber}">
+                    </label>
+                    <label class="field">开户行
+                        <input th:field="*{bankAccounts[__${stat.index}__].bankName}">
+                    </label>
+                    <label class="field">支行
+                        <input th:field="*{bankAccounts[__${stat.index}__].bankBranchName}">
+                    </label>
+                    <label class="field">联行号
+                        <input th:field="*{bankAccounts[__${stat.index}__].bankRoutingNumber}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{bankAccounts[__${stat.index}__].accountCurrency}" placeholder="CNY">
+                    </label>
+                    <label class="check"><input type="checkbox" th:field="*{bankAccounts[__${stat.index}__].receiptAccount}"> 收款账户</label>
+                    <label class="check"><input type="checkbox" th:field="*{bankAccounts[__${stat.index}__].paymentAccount}"> 付款账户</label>
+                    <label class="field">生效日
+                        <input type="date" th:field="*{bankAccounts[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束日
+                        <input type="date" th:field="*{bankAccounts[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{bankAccounts[__${stat.index}__].status}">
+                            <option value="">请选择</option>
+                            <option th:each="status : ${bankStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('bank-rows','bank-template')">增加银行账户</button>
+
+        <h2>股东明细</h2>
+        <p class="hint">只属于公司类型。股东在公司、其他法人、自然人中恰好选一个。持股比例按 0 到 1 填写，例如 0.35。分公司请不要添加股东。</p>
+        <div id="share-rows">
+            <div class="repeat-row" th:each="row, stat : *{shareholdings}">
+                <div class="row-tools">
+                    <strong>股东</strong>
+                    <label class="check"><input type="checkbox" th:field="*{shareholdings[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{shareholdings[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">股东公司
+                        <select th:field="*{shareholdings[__${stat.index}__].shareholderCompanyId}">
+                            <option value="">不选</option>
+                            <option th:each="company : ${shareholderCompanies}" th:value="${company.id}"
+                                    th:text="${company.companyCode + ' ' + company.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">股东法人
+                        <select th:field="*{shareholdings[__${stat.index}__].shareholderLegalPersonId}">
+                            <option value="">不选</option>
+                            <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">股东自然人
+                        <select th:field="*{shareholdings[__${stat.index}__].shareholderPersonId}">
+                            <option value="">不选</option>
+                            <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">股份类别
+                        <select th:field="*{shareholdings[__${stat.index}__].shareClass}">
+                            <option value="">请选择</option>
+                            <option th:each="shareClass : ${shareClasses}" th:value="${shareClass}" th:text="${shareClass}"></option>
+                        </select>
+                    </label>
+                    <label class="field">持股比例
+                        <input type="number" min="0" max="1" step="0.000001" th:field="*{shareholdings[__${stat.index}__].ownershipRatio}">
+                    </label>
+                    <label class="field">认缴出资
+                        <input type="number" step="0.01" th:field="*{shareholdings[__${stat.index}__].subscribedCapitalAmount}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{shareholdings[__${stat.index}__].currency}" placeholder="有金额时必填">
+                    </label>
+                    <label class="field">生效日
+                        <input type="date" th:field="*{shareholdings[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束日
+                        <input type="date" th:field="*{shareholdings[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据文档 ID
+                        <input type="number" th:field="*{shareholdings[__${stat.index}__].basisDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('share-rows','share-template')">增加股东</button>
+
+        <h2>公司版本</h2>
+        <p class="hint">版本记录编号、名称、类型、法人或总公司、联系方式和状态，不重复保存证照号码。当前版本随主记录更新；跨日变更会保留旧版本。</p>
+        <div id="version-rows">
+            <div class="repeat-row" th:each="row, stat : *{versions}">
+                <div class="row-tools">
+                    <strong th:text="'版本 ' + ${row.versionNumber}">版本</strong>
+                    <label class="check"><input type="checkbox" th:field="*{versions[__${stat.index}__].removed}"> 删除误录</label>
+                </div>
+                <input type="hidden" th:field="*{versions[__${stat.index}__].id}">
+                <input type="hidden" th:field="*{versions[__${stat.index}__].versionNumber}">
+                <div class="grid">
+                    <label class="field">生效日
+                        <input type="date" th:field="*{versions[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束日
+                        <input type="date" th:field="*{versions[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据文档 ID
+                        <input type="number" th:field="*{versions[__${stat.index}__].basisDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="hint" th:if="${form.versions.isEmpty()}">首次保存会生成第 1 版，生效日取成立日期，没有成立日期则取今天。</p>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+
+    <div id="reg-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>登记</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="registrations[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">版本号<input type="number" min="1" name="registrations[__INDEX__].versionNumber"></label>
+                <label class="field">登记类型
+                    <select name="registrations[__INDEX__].registrationType">
+                        <option value="">请选择</option>
+                        <option th:each="type : ${registrationTypes}" th:value="${type}" th:text="${type}"></option>
+                    </select>
+                </label>
+                <label class="field">登记状态
+                    <select name="registrations[__INDEX__].registrationStatus">
+                        <option value="">请选择</option>
+                        <option th:each="status : ${registrationStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="field">统一社会信用代码<input name="registrations[__INDEX__].unifiedSocialCreditCode"></label>
+                <label class="field">营业执照注册号<input name="registrations[__INDEX__].businessLicenseRegistrationNumber"></label>
+                <label class="field">纳税人识别号<input name="registrations[__INDEX__].taxpayerIdentificationNumber"></label>
+                <label class="field">登记机关<input name="registrations[__INDEX__].registrationAuthority"></label>
+                <label class="field">登记国家／地区<input name="registrations[__INDEX__].registrationJurisdiction" placeholder="例如：中国"></label>
+                <label class="field">登记名称<input name="registrations[__INDEX__].registeredName"></label>
+                <label class="field span-2">注册地址<input name="registrations[__INDEX__].registeredAddress"></label>
+                <label class="field span-2">经营范围<textarea name="registrations[__INDEX__].businessScope"></textarea></label>
+                <label class="field">登记日期<input type="date" name="registrations[__INDEX__].registeredAt"></label>
+                <label class="field">生效日<input type="date" name="registrations[__INDEX__].validFrom"></label>
+                <label class="field">结束日<input type="date" name="registrations[__INDEX__].validTo"></label>
+                <label class="field">注册资本<input type="number" step="0.01" name="registrations[__INDEX__].registeredCapitalAmount"></label>
+                <label class="field">资本币种<input name="registrations[__INDEX__].registeredCapitalCurrency" placeholder="CNY"></label>
+                <label class="field">营业期限起<input type="date" name="registrations[__INDEX__].businessTermStartDate"></label>
+                <label class="field">营业期限止<input type="date" name="registrations[__INDEX__].businessTermEndDate"></label>
+                <label class="field">长期经营
+                    <select name="registrations[__INDEX__].businessTermIndefinite">
+                        <option value="">未知</option>
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
+                </label>
+                <label class="field">分公司负责人
+                    <select name="registrations[__INDEX__].branchManagerPersonId">
+                        <option value="">公司留空</option>
+                        <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                    </select>
+                </label>
+                <label class="field">营业执照材料 ID<input type="number" name="registrations[__INDEX__].businessLicenseDocumentId"></label>
+                <label class="field">税号材料 ID<input type="number" name="registrations[__INDEX__].taxInformationSourceDocumentId"></label>
+                <label class="field">来源材料 ID<input type="number" name="registrations[__INDEX__].sourceDocumentId"></label>
+            </div>
+        </div>
+    </div>
+    <div id="bank-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>账户</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="bankAccounts[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">户名<input name="bankAccounts[__INDEX__].bankAccountName"></label>
+                <label class="field">账号<input name="bankAccounts[__INDEX__].bankAccountNumber"></label>
+                <label class="field">开户行<input name="bankAccounts[__INDEX__].bankName"></label>
+                <label class="field">支行<input name="bankAccounts[__INDEX__].bankBranchName"></label>
+                <label class="field">联行号<input name="bankAccounts[__INDEX__].bankRoutingNumber"></label>
+                <label class="field">币种<input name="bankAccounts[__INDEX__].accountCurrency" placeholder="CNY"></label>
+                <label class="check"><input type="checkbox" name="bankAccounts[__INDEX__].receiptAccount" value="true"> 收款账户</label>
+                <label class="check"><input type="checkbox" name="bankAccounts[__INDEX__].paymentAccount" value="true"> 付款账户</label>
+                <label class="field">生效日<input type="date" name="bankAccounts[__INDEX__].validFrom"></label>
+                <label class="field">结束日<input type="date" name="bankAccounts[__INDEX__].validTo"></label>
+                <label class="field">状态
+                    <select name="bankAccounts[__INDEX__].status">
+                        <option value="">请选择</option>
+                        <option th:each="status : ${bankStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="share-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>股东</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="shareholdings[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">股东公司
+                    <select name="shareholdings[__INDEX__].shareholderCompanyId">
+                        <option value="">不选</option>
+                        <option th:each="company : ${shareholderCompanies}" th:value="${company.id}"
+                                th:text="${company.companyCode + ' ' + company.name}"></option>
+                    </select>
+                </label>
+                <label class="field">股东法人
+                    <select name="shareholdings[__INDEX__].shareholderLegalPersonId">
+                        <option value="">不选</option>
+                        <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                    </select>
+                </label>
+                <label class="field">股东自然人
+                    <select name="shareholdings[__INDEX__].shareholderPersonId">
+                        <option value="">不选</option>
+                        <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                    </select>
+                </label>
+                <label class="field">股份类别
+                    <select name="shareholdings[__INDEX__].shareClass">
+                        <option value="">请选择</option>
+                        <option th:each="shareClass : ${shareClasses}" th:value="${shareClass}" th:text="${shareClass}"></option>
+                    </select>
+                </label>
+                <label class="field">持股比例<input type="number" min="0" max="1" step="0.000001" name="shareholdings[__INDEX__].ownershipRatio"></label>
+                <label class="field">认缴出资<input type="number" step="0.01" name="shareholdings[__INDEX__].subscribedCapitalAmount"></label>
+                <label class="field">币种<input name="shareholdings[__INDEX__].currency" placeholder="有金额时必填"></label>
+                <label class="field">生效日<input type="date" name="shareholdings[__INDEX__].validFrom"></label>
+                <label class="field">结束日<input type="date" name="shareholdings[__INDEX__].validTo"></label>
+                <label class="field">依据文档 ID<input type="number" name="shareholdings[__INDEX__].basisDocumentId"></label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

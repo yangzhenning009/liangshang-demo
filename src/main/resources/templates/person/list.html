@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>自然人 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>自然人</h1>
+            <p class="lede">法定代表人、自然人股东和个人联系方式都指向这里。自然人状态不是员工在职状态。</p>
+        </div>
+        <a class="btn" th:href="@{/persons/new}">新建自然人</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>手机</th>
+                    <th>邮箱</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="5" class="empty">还没有自然人。法定代表人和员工都要先有自然人。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.name}">宋江</td>
+                    <td th:text="${@labels.dash(item.mobilePhone)}">—</td>
+                    <td th:text="${@labels.dash(item.email)}">—</td>
+                    <td><span class="badge" th:text="${item.status}">有效</span></td>
+                    <td class="actions">
+                        <a th:href="@{/persons/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/persons/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('删除该自然人？已被员工、任期或股东引用时会拒绝。');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

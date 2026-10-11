@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, main)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="${title}">
+        <title>梁山集团</title>
+    </th:block>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600&amp;display=swap">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="seal">梁山</div>
+            <div>
+                <strong>梁山集团</strong>
+                <span>企业领域模型</span>
+            </div>
+        </div>
+        <nav class="nav">
+            <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">首页</a>
+            <a th:href="@{/legal-persons}" th:classappend="${activeNav == 'legal-persons'} ? 'active'">法人</a>
+            <a th:href="@{/companies}" th:classappend="${activeNav == 'companies'} ? 'active'">公司</a>
+            <a th:href="@{/persons}" th:classappend="${activeNav == 'persons'} ? 'active'">自然人</a>
+            <a th:href="@{/employees}" th:classappend="${activeNav == 'employees'} ? 'active'">员工</a>
+            <a th:href="@{/departments}" th:classappend="${activeNav == 'departments'} ? 'active'">部门</a>
+        </nav>
+        <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
+    </aside>
+    <div class="main">
+        <p class="flash" th:if="${message}" th:text="${message}">已保存</p>
+        <p class="flash error" th:if="${error}" th:text="${error}">无法删除</p>
+        <div th:replace="${main}">页面</div>
+    </div>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

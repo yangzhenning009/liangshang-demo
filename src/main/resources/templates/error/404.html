@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>未找到 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <h1>没有这条记录</h1>
+    <p class="lede">它可能已被删除，或地址里的编号不正确。</p>
+    <p><a class="btn secondary" th:href="@{/}">返回首页</a></p>
+</main>
+</body>
+</html>

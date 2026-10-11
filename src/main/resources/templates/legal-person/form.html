@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>法人 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建法人' : '编辑法人'">编辑法人</h1>
+            <p class="lede">登记明细只给非公司法人使用。若这家法人已经挂到公司上，请到公司页面维护证照，不要在这里再记一份。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/legal-persons}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="@{/legal-persons}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err.message}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <h2>法律信息</h2>
+        <div class="grid">
+            <label class="field">法律名称
+                <input th:field="*{legalName}" required>
+            </label>
+            <label class="field">法人类型
+                <select th:field="*{legalPersonType}">
+                    <option value="">请选择</option>
+                    <option th:each="type : ${legalPersonTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${legalPersonStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">成立日期
+                <input type="date" th:field="*{establishedAt}">
+            </label>
+            <label class="field">终止日期
+                <input type="date" th:field="*{terminatedAt}">
+            </label>
+        </div>
+
+        <h2>非公司登记</h2>
+        <p class="hint">号码未知就留空。变更已生效的登记时，若生效日早于今天，保存会截断旧版本并另起一条。</p>
+        <div id="lp-reg-rows">
+            <div class="repeat-row" th:each="row, stat : *{registrations}">
+                <div class="row-tools">
+                    <strong>登记</strong>
+                    <label class="check"><input type="checkbox" th:field="*{registrations[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{registrations[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">登记类型
+                        <select th:field="*{registrations[__${stat.index}__].registrationType}">
+                            <option value="">请选择</option>
+                            <option th:each="type : ${registrationTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                    </label>
+                    <label class="field">登记状态
+                        <select th:field="*{registrations[__${stat.index}__].registrationStatus}">
+                            <option value="">请选择</option>
+                            <option th:each="status : ${registrationStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="field">统一社会信用代码
+                        <input th:field="*{registrations[__${stat.index}__].unifiedSocialCreditCode}">
+                    </label>
+                    <label class="field">登记证书号码
+                        <input th:field="*{registrations[__${stat.index}__].registrationCertificateNumber}">
+                    </label>
+                    <label class="field">纳税人识别号
+                        <input th:field="*{registrations[__${stat.index}__].taxpayerIdentificationNumber}">
+                    </label>
+                    <label class="field">登记机关
+                        <input th:field="*{registrations[__${stat.index}__].registrationAuthority}">
+                    </label>
+                    <label class="field">辖区
+                        <input th:field="*{registrations[__${stat.index}__].jurisdiction}" placeholder="例如：中国">
+                    </label>
+                    <label class="field">登记名称
+                        <input th:field="*{registrations[__${stat.index}__].registeredName}">
+                    </label>
+                    <label class="field span-2">注册地址
+                        <input th:field="*{registrations[__${stat.index}__].registeredAddress}">
+                    </label>
+                    <label class="field">登记日期
+                        <input type="date" th:field="*{registrations[__${stat.index}__].registeredAt}">
+                    </label>
+                    <label class="field">有效期起
+                        <input type="date" th:field="*{registrations[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">有效期止
+                        <input type="date" th:field="*{registrations[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">来源材料 ID
+                        <input type="number" th:field="*{registrations[__${stat.index}__].sourceDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('lp-reg-rows','lp-reg-template')">增加登记</button>
+
+        <h2>法定代表人任期</h2>
+        <p class="hint">法定代表人是自然人，不必是员工。同一法人的任期不能重叠，结束日留空表示尚未结束。</p>
+        <div id="lp-term-rows">
+            <div class="repeat-row" th:each="row, stat : *{representativeTerms}">
+                <div class="row-tools">
+                    <strong>任期</strong>
+                    <label class="check"><input type="checkbox" th:field="*{representativeTerms[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{representativeTerms[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">自然人
+                        <select th:field="*{representativeTerms[__${stat.index}__].personId}">
+                            <option value="">请选择</option>
+                            <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">任期起
+                        <input type="date" th:field="*{representativeTerms[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">任期止
+                        <input type="date" th:field="*{representativeTerms[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据文档 ID
+                        <input type="number" th:field="*{representativeTerms[__${stat.index}__].basisDocumentId}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('lp-term-rows','lp-term-template')">增加任期</button>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+
+    <div id="lp-reg-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>登记</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="registrations[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">登记类型
+                    <select name="registrations[__INDEX__].registrationType">
+                        <option value="">请选择</option>
+                        <option th:each="type : ${registrationTypes}" th:value="${type}" th:text="${type}"></option>
+                    </select>
+                </label>
+                <label class="field">登记状态
+                    <select name="registrations[__INDEX__].registrationStatus">
+                        <option value="">请选择</option>
+                        <option th:each="status : ${registrationStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="field">统一社会信用代码
+                    <input name="registrations[__INDEX__].unifiedSocialCreditCode">
+                </label>
+                <label class="field">登记证书号码
+                    <input name="registrations[__INDEX__].registrationCertificateNumber">
+                </label>
+                <label class="field">纳税人识别号
+                    <input name="registrations[__INDEX__].taxpayerIdentificationNumber">
+                </label>
+                <label class="field">登记机关
+                    <input name="registrations[__INDEX__].registrationAuthority">
+                </label>
+                <label class="field">辖区
+                    <input name="registrations[__INDEX__].jurisdiction" placeholder="例如：中国">
+                </label>
+                <label class="field">登记名称
+                    <input name="registrations[__INDEX__].registeredName">
+                </label>
+                <label class="field span-2">注册地址
+                    <input name="registrations[__INDEX__].registeredAddress">
+                </label>
+                <label class="field">登记日期
+                    <input type="date" name="registrations[__INDEX__].registeredAt">
+                </label>
+                <label class="field">有效期起
+                    <input type="date" name="registrations[__INDEX__].validFrom">
+                </label>
+                <label class="field">有效期止
+                    <input type="date" name="registrations[__INDEX__].validTo">
+                </label>
+                <label class="field">来源材料 ID
+                    <input type="number" name="registrations[__INDEX__].sourceDocumentId">
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="lp-term-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>任期</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="representativeTerms[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">自然人
+                    <select name="representativeTerms[__INDEX__].personId">
+                        <option value="">请选择</option>
+                        <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                    </select>
+                </label>
+                <label class="field">任期起
+                    <input type="date" name="representativeTerms[__INDEX__].validFrom">
+                </label>
+                <label class="field">任期止
+                    <input type="date" name="representativeTerms[__INDEX__].validTo">
+                </label>
+                <label class="field">依据文档 ID
+                    <input type="number" name="representativeTerms[__INDEX__].basisDocumentId">
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

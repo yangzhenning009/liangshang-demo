@@ -1,0 +1,35 @@
+server:
+  port: 18480
+
+spring:
+  application:
+    name: liangshan-demo
+  datasource:
+    url: jdbc:sqlite:./data/liangshan.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+      pool-name: liangshan-sqlite
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        jdbc.time_zone: Asia/Shanghai
+        # SQLite identity DDL emits the type "integer". Hibernate skips that type
+        # if the CREATE statement already contains the word. Default column order
+        # can put version_number (integer) before id, leaving id untyped so
+        # inserts do not return a rowid. Legacy order declares id first.
+        column_ordering_strategy: legacy
+  thymeleaf:
+    cache: false
+  web:
+    locale: zh_CN
+    locale-resolver: fixed
+
+logging:
+  level:
+    org.hibernate.SQL: warn
