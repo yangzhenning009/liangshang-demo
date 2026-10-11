@@ -14,4 +14,6 @@ public interface CompanyShareholdingRepository extends JpaRepository<CompanyShar
     List<CompanyShareholding> findByShareholderLegalPersonId(Long shareholderLegalPersonId);
 
     List<CompanyShareholding> findByShareholderPersonId(Long shareholderPersonId);
+
+    boolean existsByBasisDocumentId(Long basisDocumentId);
 }

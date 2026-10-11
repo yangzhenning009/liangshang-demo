@@ -10,13 +10,21 @@ import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.PersonRepository;
 import com.liangshan.demo.service.CompanyService;
 import com.liangshan.demo.service.DepartmentService;
+import com.liangshan.demo.service.EmployeeOrgService;
 import com.liangshan.demo.service.EmployeeService;
+import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
 import com.liangshan.demo.service.PersonService;
 import com.liangshan.demo.web.form.CompanyForm;
 import com.liangshan.demo.web.form.DepartmentForm;
 import com.liangshan.demo.web.form.EmployeeForm;
+import com.liangshan.demo.web.form.EmployeeOrgForm;
+import com.liangshan.demo.web.form.EmployeeOrgForm.AssignmentForm;
+import com.liangshan.demo.web.form.EmployeeOrgForm.EmploymentForm;
+import com.liangshan.demo.web.form.EmployeeOrgForm.ReportingForm;
+import com.liangshan.demo.web.form.SourceDocumentForm;
+import org.junit.jupiter.api.function.Executable;
 import com.liangshan.demo.web.form.LegalPersonForm;
 import com.liangshan.demo.web.form.PersonForm;
 import org.junit.jupiter.api.Test;
@@ -84,6 +92,10 @@ class MasterDataDemoTest {
     private PersonRepository personRepository;
     @Autowired
     private EmployeeRepository employeeRepository;
+    @Autowired
+    private EmployeeOrgService organizations;
+    @Autowired
+    private SourceDocumentService sourceDocuments;
 
     @Test
     void schemaUsesOnlyBasicConstraints() {
@@ -115,7 +127,11 @@ class MasterDataDemoTest {
                 "employee",
                 "department",
                 "department_version",
-                "department_service_company")));
+                "department_service_company",
+                "employee_employment",
+                "employee_department_assignment",
+                "employee_reporting_line",
+                "source_document")));
     }
 
     @Test
@@ -260,6 +276,98 @@ class MasterDataDemoTest {
     }
 
     @Test
+    void employmentPeriodsReportingCycleAndDocuments() throws Exception {
+        long companyId = companyForOrg("LS-ORG", "任职公司");
+        long otherCompanyId = companyForOrg("LS-ORG-2", "另一用人公司");
+        long departmentId = department(companyId, "ORG-HR", "人事部");
+        long songId = employee("宋江", "E-SONG");
+        long luId = employee("卢俊义", "E-LU");
+
+        EmployeeOrgForm bothEmployers = new EmployeeOrgForm();
+        EmploymentForm mixed = employment("E-1", companyId, null);
+        mixed.setEmployerLegalPersonId(legalPersons.save(legalPerson("多余法人")));
+        bothEmployers.getEmployments().add(mixed);
+        assertTrue(messageOf(() -> organizations.save(songId, bothEmployers)).contains("恰好选择一个"));
+
+        EmployeeOrgForm song = new EmployeeOrgForm();
+        song.getEmployments().add(employment("GH-1", companyId, null));
+        organizations.save(songId, song);
+        EmployeeOrgForm duplicate = new EmployeeOrgForm();
+        duplicate.getEmployments().add(employment("GH-1", companyId, null));
+        assertTrue(messageOf(() -> organizations.save(luId, duplicate)).contains("用工编号已存在"));
+
+        EmployeeOrgForm otherEmployer = new EmployeeOrgForm();
+        otherEmployer.getEmployments().add(employment("GH-1", otherCompanyId, null));
+        organizations.save(luId, otherEmployer);
+
+        EmployeeOrgForm outside = organizations.form(songId);
+        AssignmentForm early = assignment(outside.getEmployments().get(0).getRowKey(), departmentId,
+                LocalDate.of(2010, 1, 1), null);
+        outside.getAssignments().add(early);
+        assertTrue(messageOf(() -> organizations.save(songId, outside)).contains("任职期间必须落在雇佣有效期内"));
+
+        EmployeeOrgForm assigned = organizations.form(songId);
+        assigned.getAssignments().add(assignment(assigned.getEmployments().get(0).getRowKey(), departmentId,
+                LocalDate.of(2020, 1, 1), null));
+        organizations.save(songId, assigned);
+
+        EmployeeOrgForm luAssigned = organizations.form(luId);
+        luAssigned.getAssignments().add(assignment(luAssigned.getEmployments().get(0).getRowKey(), departmentId,
+                LocalDate.of(2020, 1, 1), null));
+        organizations.save(luId, luAssigned);
+
+        EmployeeOrgForm selfReport = organizations.form(songId);
+        String songAssignment = selfReport.getAssignments().get(0).getRowKey();
+        selfReport.getReportingLines().add(reporting(songAssignment, songAssignment, "行政"));
+        assertTrue(messageOf(() -> organizations.save(songId, selfReport)).contains("不能向自身任职汇报"));
+
+        EmployeeOrgForm songReports = organizations.form(songId);
+        String managerKey = "id:" + organizations.form(luId).getAssignments().get(0).getId();
+        songReports.getReportingLines().add(reporting(songReports.getAssignments().get(0).getRowKey(), managerKey, "行政"));
+        organizations.save(songId, songReports);
+
+        EmployeeOrgForm cycle = organizations.form(luId);
+        cycle.getReportingLines().add(reporting(
+                cycle.getAssignments().get(0).getRowKey(),
+                "id:" + organizations.form(songId).getAssignments().get(0).getId(),
+                "行政"));
+        assertTrue(messageOf(() -> organizations.save(luId, cycle)).contains("行政汇报链不能形成循环"));
+
+        cycle.getReportingLines().get(0).setReportingType("职能");
+        organizations.save(luId, cycle);
+
+        EmployeeOrgForm songFunctional = organizations.form(songId);
+        songFunctional.getReportingLines().get(0).setReportingType("职能");
+        organizations.save(songId, songFunctional);
+
+        SourceDocumentForm document = new SourceDocumentForm();
+        document.setDocumentType("劳动合同");
+        document.setDocumentNumber("LD-SONG-1");
+        document.setIssuerCompanyId(companyId);
+        document.setStatus("有效");
+        long documentId = sourceDocuments.save(document);
+        EmployeeOrgForm withDocument = organizations.form(songId);
+        withDocument.getEmployments().get(0).setEmploymentDocumentId(documentId);
+        organizations.save(songId, withDocument);
+        assertTrue(messageOf(() -> sourceDocuments.delete(documentId)).contains("仍被业务记录引用"));
+
+        mvc.perform(get("/employees/" + songId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("GH-1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("LD-SONG-1")));
+        mvc.perform(get("/source-documents"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("LD-SONG-1")));
+
+        CompanyForm badDocument = company("LS-DOC", "错误材料", "company");
+        badDocument.setLegalPersonId(legalPersons.save(legalPerson("材料法人")));
+        badDocument.setCompanyForm("有限责任公司");
+        badDocument.getRegistrations().add(registration(1, "91370100MA3C99999Z", LocalDate.now().minusDays(3)));
+        badDocument.getRegistrations().get(0).setSourceDocumentId(999999L);
+        assertTrue(messageOf(() -> companies.save(badDocument)).contains("来源材料不存在"));
+    }
+
+    @Test
     void browserCanCreateLegalPerson() throws Exception {
         mvc.perform(post("/legal-persons")
                         .param("legalName", "页面法人")
@@ -270,6 +378,74 @@ class MasterDataDemoTest {
         mvc.perform(get("/legal-persons"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("页面法人")));
+    }
+
+    private String messageOf(Executable executable) {
+        return assertThrows(FieldErrorsException.class, executable).getMessage();
+    }
+
+    private long companyForOrg(String code, String name) {
+        long legalId = legalPersons.save(legalPerson(name + "法人"));
+        CompanyForm form = company(code, name, "company");
+        form.setLegalPersonId(legalId);
+        form.setCompanyForm("有限责任公司");
+        return companies.save(form);
+    }
+
+    private long department(long companyId, String code, String name) {
+        DepartmentForm form = new DepartmentForm();
+        form.setCompanyId(companyId);
+        form.setDepartmentCode(code);
+        form.setName(name);
+        form.setDepartmentType("部门");
+        form.setValidFrom(LocalDate.of(2019, 1, 1));
+        form.setStatus("有效");
+        return departments.save(form);
+    }
+
+    private long employee(String name, String code) {
+        PersonForm person = new PersonForm();
+        person.setName(name);
+        person.setStatus("有效");
+        long personId = persons.save(person);
+        EmployeeForm employee = new EmployeeForm();
+        employee.setPersonId(personId);
+        employee.setEmployeeCode(code);
+        employee.setStatus("有效");
+        return employees.save(employee);
+    }
+
+    private EmploymentForm employment(String number, Long companyId, Long legalPersonId) {
+        EmploymentForm row = new EmploymentForm();
+        row.setRowKey("e-" + number + "-" + (companyId == null ? legalPersonId : companyId));
+        row.setEmployerCompanyId(companyId);
+        row.setEmployerLegalPersonId(legalPersonId);
+        row.setEmployeeNumber(number);
+        row.setEmploymentType("全职");
+        row.setEmploymentStartDate(LocalDate.of(2020, 1, 1));
+        row.setStatus("在职");
+        return row;
+    }
+
+    private AssignmentForm assignment(String employmentKey, long departmentId, LocalDate from, LocalDate to) {
+        AssignmentForm row = new AssignmentForm();
+        row.setRowKey("a-" + employmentKey + "-" + from);
+        row.setEmploymentKey(employmentKey);
+        row.setDepartmentId(departmentId);
+        row.setAssignmentType("主岗");
+        row.setValidFrom(from);
+        row.setValidTo(to);
+        row.setStatus("有效");
+        return row;
+    }
+
+    private ReportingForm reporting(String assignmentKey, String managerKey, String type) {
+        ReportingForm row = new ReportingForm();
+        row.setAssignmentKey(assignmentKey);
+        row.setManagerAssignmentKey(managerKey);
+        row.setReportingType(type);
+        row.setValidFrom(LocalDate.of(2020, 1, 1));
+        return row;
     }
 
     private LegalPersonForm legalPerson(String name) {

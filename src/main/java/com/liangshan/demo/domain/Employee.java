@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 
 /**
  * 员工通过 person_id 关联自然人。一对一由应用层维护，数据库不建唯一约束或外键。
- * 雇佣、部门任职、汇报明细属于后续工作包。
+ * 雇佣、部门任职和汇报明细由员工详情页维护，数据库不建外键。
  */
 @Entity
 @Table(name = "employee", indexes = {

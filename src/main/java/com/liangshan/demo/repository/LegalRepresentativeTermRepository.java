@@ -10,4 +10,6 @@ public interface LegalRepresentativeTermRepository extends JpaRepository<LegalRe
     List<LegalRepresentativeTerm> findByLegalPersonIdOrderByValidFromAsc(Long legalPersonId);
 
     List<LegalRepresentativeTerm> findByPersonId(Long personId);
+
+    boolean existsByBasisDocumentId(Long basisDocumentId);
 }

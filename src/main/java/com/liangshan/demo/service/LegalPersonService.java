@@ -37,6 +37,7 @@ public class LegalPersonService {
     private final CompanyVersionRepository companyVersions;
     private final CompanyShareholdingRepository shareholdings;
     private final IdentifierGuard identifiers;
+    private final SourceDocumentService documents;
 
     public List<LegalPerson> list() {
         return legalPersons.findAllByOrderByLegalNameAsc();
@@ -231,6 +232,7 @@ public class LegalPersonService {
             identifiers.checkUscc(errors, prefix + ".unifiedSocialCreditCode", row.getUnifiedSocialCreditCode(), null, form.getId());
             identifiers.checkTin(errors, prefix + ".taxpayerIdentificationNumber", row.getTaxpayerIdentificationNumber(), null, form.getId());
             identifiers.checkCertificate(errors, prefix + ".registrationCertificateNumber", row.getRegistrationCertificateNumber(), form.getId());
+            documents.require(row.getSourceDocumentId(), errors, prefix + ".sourceDocumentId");
             froms.add(row.getValidFrom());
             tos.add(row.getValidTo());
         }
@@ -248,6 +250,7 @@ public class LegalPersonService {
                 errors.add(prefix + ".validFrom", "请填写任期开始日");
             }
             errors.add(prefix + ".validTo", Periods.orderError(row.getValidFrom(), row.getValidTo()));
+            documents.require(row.getBasisDocumentId(), errors, prefix + ".basisDocumentId");
             termFrom.add(row.getValidFrom());
             termTo.add(row.getValidTo());
         }

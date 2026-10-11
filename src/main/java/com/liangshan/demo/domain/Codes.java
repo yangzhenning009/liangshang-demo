@@ -24,6 +24,13 @@ public final class Codes {
     public static final List<String> REGISTRATION_STATUS = List.of("存续", "注销", "迁出", "吊销");
     public static final List<String> BANK_STATUS = List.of("有效", "停用", "冻结");
     public static final List<String> SHARE_CLASSES = List.of("普通股", "优先股", "其他");
+    public static final List<String> EMPLOYMENT_TYPES = List.of("全职", "兼职", "其他");
+    public static final List<String> EMPLOYMENT_STATUS = List.of("在职", "离职");
+    public static final List<String> ASSIGNMENT_TYPES = List.of("主岗", "兼岗", "矩阵任职");
+    public static final List<String> ASSIGNMENT_STATUS = List.of("有效", "结束");
+    public static final String REPORTING_ADMIN = "行政";
+    public static final List<String> REPORTING_TYPES = List.of(REPORTING_ADMIN, "职能");
+    public static final List<String> DOCUMENT_STATUS = List.of("有效", "作废");
 
     private Codes() {
     }

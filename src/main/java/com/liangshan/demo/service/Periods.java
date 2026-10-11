@@ -16,6 +16,36 @@ public final class Periods {
         return null;
     }
 
+    /**
+     * Inner period sits inside the outer period. Both ends are exclusive; a null end is still open.
+     * An open inner period only fits an open outer period.
+     */
+    public static boolean contains(LocalDate outerFrom, LocalDate outerTo, LocalDate innerFrom, LocalDate innerTo) {
+        if (outerFrom == null || innerFrom == null || innerFrom.isBefore(outerFrom)) {
+            return false;
+        }
+        if (outerTo != null && !innerFrom.isBefore(outerTo)) {
+            return false;
+        }
+        if (innerTo == null) {
+            return outerTo == null;
+        }
+        return outerTo == null || !innerTo.isAfter(outerTo);
+    }
+
+    public static LocalDate[] intersection(LocalDate fromA, LocalDate toA, LocalDate fromB, LocalDate toB) {
+        LocalDate from = fromA.isAfter(fromB) ? fromA : fromB;
+        LocalDate to;
+        if (toA == null) {
+            to = toB;
+        } else if (toB == null) {
+            to = toA;
+        } else {
+            to = toA.isBefore(toB) ? toA : toB;
+        }
+        return new LocalDate[] {from, to};
+    }
+
     public static boolean overlaps(LocalDate fromA, LocalDate toA, LocalDate fromB, LocalDate toB) {
         if (fromA == null || fromB == null) {
             return false;

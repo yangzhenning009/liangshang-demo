@@ -16,4 +16,10 @@ public interface CompanyRegistrationRepository extends JpaRepository<CompanyRegi
     List<CompanyRegistration> findByTaxpayerIdentificationNumber(String taxpayerIdentificationNumber);
 
     List<CompanyRegistration> findByBranchManagerPersonId(Long branchManagerPersonId);
+
+    boolean existsByBusinessLicenseDocumentId(Long businessLicenseDocumentId);
+
+    boolean existsByTaxInformationSourceDocumentId(Long taxInformationSourceDocumentId);
+
+    boolean existsBySourceDocumentId(Long sourceDocumentId);
 }

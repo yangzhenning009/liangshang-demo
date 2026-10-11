@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>任职 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${header.employeeCode + ' ' + header.personName}">员工任职</h1>
+            <p class="lede">雇佣记录决定用人对象和实际在职期间。部门任职必须落在对应雇佣期内，可以跨公司。行政汇报不能成环，也不能指向自己的同一条任职；职能汇报单独记录。</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:href="@{/employees/{id}/edit(id=${header.id})}">编辑档案</a>
+            <a class="btn secondary" th:href="@{/employees}">返回列表</a>
+        </div>
+    </div>
+    <form class="panel employee-org" th:object="${form}" th:action="@{/employees/{id}/org(id=${header.id})}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{employeeId}">
+
+        <h2>雇佣记录</h2>
+        <p class="hint">用人对象在公司（含分公司）和其他法人中恰好选一个。用工编号只在所选对象内不能重复。终止日当天起不再属于这段雇佣，期间按左闭右开。录入时间在首次保存时写入。</p>
+        <div id="employment-rows">
+            <div class="repeat-row" th:each="row, stat : *{employments}">
+                <div class="row-tools">
+                    <strong>雇佣</strong>
+                    <span class="hint" th:if="${row.recordedAt != null}" th:text="'录入 ' + ${row.recordedAt}">录入时间</span>
+                    <label class="check"><input type="checkbox" th:field="*{employments[__${stat.index}__].removed}"> 删除误录</label>
+                </div>
+                <input type="hidden" th:field="*{employments[__${stat.index}__].id}">
+                <input type="hidden" data-row-key th:field="*{employments[__${stat.index}__].rowKey}">
+                <div class="grid">
+                    <label class="field">用人公司
+                        <select data-picker-label th:field="*{employments[__${stat.index}__].employerCompanyId}">
+                            <option value="">不选</option>
+                            <option th:each="company : ${companies}" th:value="${company.id}"
+                                    th:text="${company.companyCode + ' ' + company.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">用人法人
+                        <select data-picker-label th:field="*{employments[__${stat.index}__].employerLegalPersonId}">
+                            <option value="">不选</option>
+                            <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">用工编号
+                        <input data-picker-label th:field="*{employments[__${stat.index}__].employeeNumber}">
+                    </label>
+                    <label class="field">用工类型
+                        <select th:field="*{employments[__${stat.index}__].employmentType}">
+                            <option th:each="type : ${employmentTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                    </label>
+                    <label class="field">合同编号
+                        <input th:field="*{employments[__${stat.index}__].employmentContractNumber}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{employments[__${stat.index}__].status}">
+                            <option th:each="status : ${employmentStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="field">入职日
+                        <input data-picker-label type="date" th:field="*{employments[__${stat.index}__].employmentStartDate}">
+                    </label>
+                    <label class="field">终止日
+                        <input type="date" th:field="*{employments[__${stat.index}__].employmentEndDate}">
+                    </label>
+                    <label class="field span-2">离职原因
+                        <input th:field="*{employments[__${stat.index}__].terminationReason}">
+                    </label>
+                    <label class="field">合同开始
+                        <input type="date" th:field="*{employments[__${stat.index}__].employmentContractStartDate}">
+                    </label>
+                    <label class="field">合同结束
+                        <input type="date" th:field="*{employments[__${stat.index}__].employmentContractEndDate}">
+                    </label>
+                    <label class="field">雇佣材料
+                        <select th:replace="~{fragments/document-select :: bound('employments[__${stat.index}__].employmentDocumentId')}"></select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('employment-rows','employment-template')">增加雇佣</button>
+
+        <h2>部门任职</h2>
+        <p class="hint">任职的雇佣必须是上面同一名员工的记录。任职期间不能超出雇佣有效期。部门可以属于另一家公司或分公司，用人对象仍以雇佣为准。</p>
+        <div id="assignment-rows">
+            <div class="repeat-row" th:each="row, stat : *{assignments}">
+                <div class="row-tools">
+                    <strong>任职</strong>
+                    <label class="check"><input type="checkbox" th:field="*{assignments[__${stat.index}__].removed}"> 删除误录</label>
+                </div>
+                <input type="hidden" th:field="*{assignments[__${stat.index}__].id}">
+                <input type="hidden" data-row-key th:field="*{assignments[__${stat.index}__].rowKey}">
+                <div class="grid">
+                    <label class="field">雇佣记录
+                        <select class="employment-picker" th:field="*{assignments[__${stat.index}__].employmentKey}">
+                            <option value="">请选择</option>
+                            <option th:each="employment : *{employments}" th:if="${!employment.removed}"
+                                    th:value="${employment.rowKey}" th:text="${employment.displayLabel}"></option>
+                        </select>
+                    </label>
+                    <label class="field">部门
+                        <select data-picker-label th:field="*{assignments[__${stat.index}__].departmentId}">
+                            <option value="">请选择</option>
+                            <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                                    th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">任职类型
+                        <select data-picker-label th:field="*{assignments[__${stat.index}__].assignmentType}">
+                            <option th:each="type : ${assignmentTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                    </label>
+                    <label class="field">职务
+                        <input data-picker-label th:field="*{assignments[__${stat.index}__].positionTitle}">
+                    </label>
+                    <label class="field">开始
+                        <input data-picker-label type="date" th:field="*{assignments[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input data-picker-label type="date" th:field="*{assignments[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{assignments[__${stat.index}__].status}">
+                            <option th:each="status : ${assignmentStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('assignment-rows','assignment-template')">增加任职</button>
+
+        <h2>汇报线</h2>
+        <p class="hint">下方任职必须是本员工的任职。上级可以是任何员工的任职，但不能是同一条任职。汇报期间要同时落在两边的任职期内。只检查行政链是否成环。</p>
+        <div id="reporting-rows">
+            <div class="repeat-row" th:each="row, stat : *{reportingLines}">
+                <div class="row-tools">
+                    <strong>汇报</strong>
+                    <label class="check"><input type="checkbox" th:field="*{reportingLines[__${stat.index}__].removed}"> 删除误录</label>
+                </div>
+                <input type="hidden" th:field="*{reportingLines[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">本人任职
+                        <select class="assignment-picker" th:field="*{reportingLines[__${stat.index}__].assignmentKey}">
+                            <option value="">请选择</option>
+                            <option th:each="assignment : *{assignments}" th:if="${!assignment.removed}"
+                                    th:value="${assignment.rowKey}" th:text="${assignment.displayLabel}"></option>
+                        </select>
+                    </label>
+                    <label class="field">上级任职
+                        <select class="manager-picker" th:field="*{reportingLines[__${stat.index}__].managerAssignmentKey}">
+                            <option value="">请选择</option>
+                            <option th:each="assignment : *{assignments}" th:if="${!assignment.removed}"
+                                    th:value="${assignment.rowKey}" th:text="${assignment.displayLabel}"></option>
+                            <option th:each="choice : ${otherAssignments}" th:value="${choice.key}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">汇报类型
+                        <select th:field="*{reportingLines[__${stat.index}__].reportingType}">
+                            <option th:each="type : ${reportingTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{reportingLines[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{reportingLines[__${stat.index}__].validTo}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('reporting-rows','reporting-template')">增加汇报</button>
+
+        <div class="form-actions">
+            <button type="submit">保存任职明细</button>
+        </div>
+    </form>
+
+    <select id="other-assignments" hidden>
+        <option th:each="choice : ${otherAssignments}" th:value="${choice.key}" th:text="${choice.label}"></option>
+    </select>
+
+    <div id="employment-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>雇佣</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="employments[__INDEX__].id" value="">
+            <input type="hidden" data-row-key name="employments[__INDEX__].rowKey" value="">
+            <div class="grid">
+                <label class="field">用人公司
+                    <select data-picker-label name="employments[__INDEX__].employerCompanyId">
+                        <option value="">不选</option>
+                        <option th:each="company : ${companies}" th:value="${company.id}"
+                                th:text="${company.companyCode + ' ' + company.name}"></option>
+                    </select>
+                </label>
+                <label class="field">用人法人
+                    <select data-picker-label name="employments[__INDEX__].employerLegalPersonId">
+                        <option value="">不选</option>
+                        <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                    </select>
+                </label>
+                <label class="field">用工编号
+                    <input data-picker-label name="employments[__INDEX__].employeeNumber">
+                </label>
+                <label class="field">用工类型
+                    <select name="employments[__INDEX__].employmentType">
+                        <option th:each="type : ${employmentTypes}" th:value="${type}" th:text="${type}"></option>
+                    </select>
+                </label>
+                <label class="field">合同编号
+                    <input name="employments[__INDEX__].employmentContractNumber">
+                </label>
+                <label class="field">状态
+                    <select name="employments[__INDEX__].status">
+                        <option th:each="status : ${employmentStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="field">入职日
+                    <input data-picker-label type="date" name="employments[__INDEX__].employmentStartDate">
+                </label>
+                <label class="field">终止日
+                    <input type="date" name="employments[__INDEX__].employmentEndDate">
+                </label>
+                <label class="field span-2">离职原因
+                    <input name="employments[__INDEX__].terminationReason">
+                </label>
+                <label class="field">合同开始
+                    <input type="date" name="employments[__INDEX__].employmentContractStartDate">
+                </label>
+                <label class="field">合同结束
+                    <input type="date" name="employments[__INDEX__].employmentContractEndDate">
+                </label>
+                <label class="field">雇佣材料
+                    <select th:replace="~{fragments/document-select :: named('employments[__INDEX__].employmentDocumentId')}"></select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="assignment-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>任职</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="assignments[__INDEX__].id" value="">
+            <input type="hidden" data-row-key name="assignments[__INDEX__].rowKey" value="">
+            <div class="grid">
+                <label class="field">雇佣记录
+                    <select class="employment-picker" name="assignments[__INDEX__].employmentKey">
+                        <option value="">请选择</option>
+                    </select>
+                </label>
+                <label class="field">部门
+                    <select data-picker-label name="assignments[__INDEX__].departmentId">
+                        <option value="">请选择</option>
+                        <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                                th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                    </select>
+                </label>
+                <label class="field">任职类型
+                    <select data-picker-label name="assignments[__INDEX__].assignmentType">
+                        <option th:each="type : ${assignmentTypes}" th:value="${type}" th:text="${type}"></option>
+                    </select>
+                </label>
+                <label class="field">职务
+                    <input data-picker-label name="assignments[__INDEX__].positionTitle">
+                </label>
+                <label class="field">开始
+                    <input data-picker-label type="date" name="assignments[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input data-picker-label type="date" name="assignments[__INDEX__].validTo">
+                </label>
+                <label class="field">状态
+                    <select name="assignments[__INDEX__].status">
+                        <option th:each="status : ${assignmentStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="reporting-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>汇报</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="reportingLines[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">本人任职
+                    <select class="assignment-picker" name="reportingLines[__INDEX__].assignmentKey">
+                        <option value="">请选择</option>
+                    </select>
+                </label>
+                <label class="field">上级任职
+                    <select class="manager-picker" name="reportingLines[__INDEX__].managerAssignmentKey">
+                        <option value="">请选择</option>
+                    </select>
+                </label>
+                <label class="field">汇报类型
+                    <select name="reportingLines[__INDEX__].reportingType">
+                        <option th:each="type : ${reportingTypes}" th:value="${type}" th:text="${type}"></option>
+                    </select>
+                </label>
+                <label class="field">开始
+                    <input type="date" name="reportingLines[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="reportingLines[__INDEX__].validTo">
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

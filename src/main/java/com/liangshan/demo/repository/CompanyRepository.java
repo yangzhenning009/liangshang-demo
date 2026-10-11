@@ -24,4 +24,6 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     List<Company> findByTaxpayerIdentificationNumber(String taxpayerIdentificationNumber);
 
     List<Company> findByCompanyTypeOrderByCompanyCodeAsc(String companyType);
+
+    boolean existsByBusinessLicenseDocumentId(Long businessLicenseDocumentId);
 }

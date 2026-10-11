@@ -14,4 +14,6 @@ public interface LegalPersonRegistrationRepository extends JpaRepository<LegalPe
     List<LegalPersonRegistration> findByRegistrationCertificateNumber(String registrationCertificateNumber);
 
     List<LegalPersonRegistration> findByTaxpayerIdentificationNumber(String taxpayerIdentificationNumber);
+
+    boolean existsBySourceDocumentId(Long sourceDocumentId);
 }

@@ -96,8 +96,8 @@
                     <label class="field">有效期止
                         <input type="date" th:field="*{registrations[__${stat.index}__].validTo}">
                     </label>
-                    <label class="field">来源材料 ID
-                        <input type="number" th:field="*{registrations[__${stat.index}__].sourceDocumentId}">
+                    <label class="field">来源材料
+                        <select th:replace="~{fragments/document-select :: bound('registrations[__${stat.index}__].sourceDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -126,8 +126,8 @@
                     <label class="field">任期止
                         <input type="date" th:field="*{representativeTerms[__${stat.index}__].validTo}">
                     </label>
-                    <label class="field">依据文档 ID
-                        <input type="number" th:field="*{representativeTerms[__${stat.index}__].basisDocumentId}">
+                    <label class="field">依据材料
+                        <select th:replace="~{fragments/document-select :: bound('representativeTerms[__${stat.index}__].basisDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -188,8 +188,8 @@
                 <label class="field">有效期止
                     <input type="date" name="registrations[__INDEX__].validTo">
                 </label>
-                <label class="field">来源材料 ID
-                    <input type="number" name="registrations[__INDEX__].sourceDocumentId">
+                <label class="field">来源材料
+                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].sourceDocumentId')}"></select>
                 </label>
             </div>
         </div>
@@ -214,8 +214,8 @@
                 <label class="field">任期止
                     <input type="date" name="representativeTerms[__INDEX__].validTo">
                 </label>
-                <label class="field">依据文档 ID
-                    <input type="number" name="representativeTerms[__INDEX__].basisDocumentId">
+                <label class="field">依据材料
+                    <select th:replace="~{fragments/document-select :: named('representativeTerms[__INDEX__].basisDocumentId')}"></select>
                 </label>
             </div>
         </div>

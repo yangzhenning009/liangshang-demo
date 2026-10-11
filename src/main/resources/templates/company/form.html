@@ -157,14 +157,14 @@
                             <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
                         </select>
                     </label>
-                    <label class="field">营业执照材料 ID
-                        <input type="number" th:field="*{registrations[__${stat.index}__].businessLicenseDocumentId}">
+                    <label class="field">营业执照材料
+                        <select th:replace="~{fragments/document-select :: bound('registrations[__${stat.index}__].businessLicenseDocumentId')}"></select>
                     </label>
-                    <label class="field">税号材料 ID
-                        <input type="number" th:field="*{registrations[__${stat.index}__].taxInformationSourceDocumentId}">
+                    <label class="field">税号材料
+                        <select th:replace="~{fragments/document-select :: bound('registrations[__${stat.index}__].taxInformationSourceDocumentId')}"></select>
                     </label>
-                    <label class="field">来源材料 ID
-                        <input type="number" th:field="*{registrations[__${stat.index}__].sourceDocumentId}">
+                    <label class="field">来源材料
+                        <select th:replace="~{fragments/document-select :: bound('registrations[__${stat.index}__].sourceDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -268,8 +268,8 @@
                     <label class="field">结束日
                         <input type="date" th:field="*{shareholdings[__${stat.index}__].validTo}">
                     </label>
-                    <label class="field">依据文档 ID
-                        <input type="number" th:field="*{shareholdings[__${stat.index}__].basisDocumentId}">
+                    <label class="field">依据材料
+                        <select th:replace="~{fragments/document-select :: bound('shareholdings[__${stat.index}__].basisDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -293,8 +293,8 @@
                     <label class="field">结束日
                         <input type="date" th:field="*{versions[__${stat.index}__].validTo}">
                     </label>
-                    <label class="field">依据文档 ID
-                        <input type="number" th:field="*{versions[__${stat.index}__].basisDocumentId}">
+                    <label class="field">依据材料
+                        <select th:replace="~{fragments/document-select :: bound('versions[__${stat.index}__].basisDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -354,9 +354,15 @@
                         <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
                     </select>
                 </label>
-                <label class="field">营业执照材料 ID<input type="number" name="registrations[__INDEX__].businessLicenseDocumentId"></label>
-                <label class="field">税号材料 ID<input type="number" name="registrations[__INDEX__].taxInformationSourceDocumentId"></label>
-                <label class="field">来源材料 ID<input type="number" name="registrations[__INDEX__].sourceDocumentId"></label>
+                <label class="field">营业执照材料
+                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].businessLicenseDocumentId')}"></select>
+                </label>
+                <label class="field">税号材料
+                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].taxInformationSourceDocumentId')}"></select>
+                </label>
+                <label class="field">来源材料
+                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].sourceDocumentId')}"></select>
+                </label>
             </div>
         </div>
     </div>
@@ -425,7 +431,9 @@
                 <label class="field">币种<input name="shareholdings[__INDEX__].currency" placeholder="有金额时必填"></label>
                 <label class="field">生效日<input type="date" name="shareholdings[__INDEX__].validFrom"></label>
                 <label class="field">结束日<input type="date" name="shareholdings[__INDEX__].validTo"></label>
-                <label class="field">依据文档 ID<input type="number" name="shareholdings[__INDEX__].basisDocumentId"></label>
+                <label class="field">依据材料
+                    <select th:replace="~{fragments/document-select :: named('shareholdings[__INDEX__].basisDocumentId')}"></select>
+                </label>
             </div>
         </div>
     </div>

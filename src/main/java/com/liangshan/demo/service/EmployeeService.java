@@ -24,6 +24,7 @@ public class EmployeeService {
     private final PersonRepository persons;
     private final DepartmentRepository departments;
     private final DepartmentVersionRepository departmentVersions;
+    private final EmployeeOrgService organizations;
 
     public record EmployeeRow(Long id, String employeeCode, String personName, String workEmail, String workPhone, String status) {
     }
@@ -88,6 +89,9 @@ public class EmployeeService {
         if (!departments.findByDepartmentHeadEmployeeId(id).isEmpty()
                 || !departmentVersions.findByDepartmentHeadEmployeeId(id).isEmpty()) {
             throw new FieldErrorsException(Map.of("*", "该员工仍是部门负责人，不能删除"));
+        }
+        if (organizations.hasOrgRows(id)) {
+            throw new FieldErrorsException(Map.of("*", "该员工仍有雇佣、任职或汇报记录，不能删除"));
         }
         employees.deleteById(id);
     }

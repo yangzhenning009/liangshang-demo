@@ -10,4 +10,6 @@ public interface DepartmentServiceCompanyRepository extends JpaRepository<Depart
     List<DepartmentServiceCompany> findByDepartmentIdOrderByIdAsc(Long departmentId);
 
     List<DepartmentServiceCompany> findByServiceCompanyId(Long serviceCompanyId);
+
+    boolean existsByBasisDocumentId(Long basisDocumentId);
 }

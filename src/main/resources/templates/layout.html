@@ -26,6 +26,7 @@
             <a th:href="@{/persons}" th:classappend="${activeNav == 'persons'} ? 'active'">自然人</a>
             <a th:href="@{/employees}" th:classappend="${activeNav == 'employees'} ? 'active'">员工</a>
             <a th:href="@{/departments}" th:classappend="${activeNav == 'departments'} ? 'active'">部门</a>
+            <a th:href="@{/source-documents}" th:classappend="${activeNav == 'documents'} ? 'active'">来源材料</a>
         </nav>
         <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
     </aside>

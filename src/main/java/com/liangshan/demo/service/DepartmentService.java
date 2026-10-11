@@ -40,6 +40,7 @@ public class DepartmentService {
     private final CompanyRepository companies;
     private final EmployeeRepository employees;
     private final PersonRepository persons;
+    private final SourceDocumentService documents;
 
     public record DepartmentRow(
             Long id,
@@ -262,6 +263,7 @@ public class DepartmentService {
                 errors.add(prefix + ".validFrom", "请填写服务开始日");
             }
             errors.add(prefix + ".validTo", Periods.orderError(row.getValidFrom(), row.getValidTo()));
+            documents.require(row.getBasisDocumentId(), errors, prefix + ".basisDocumentId");
             froms.add(row.getValidFrom());
             tos.add(row.getValidTo());
             serviceIds.add(row.getServiceCompanyId());
@@ -287,6 +289,7 @@ public class DepartmentService {
                 errors.add(prefix + ".validFrom", "请填写版本生效日");
             }
             errors.add(prefix + ".validTo", Periods.orderError(row.getValidFrom(), row.getValidTo()));
+            documents.require(row.getBasisDocumentId(), errors, prefix + ".basisDocumentId");
             if (row.getValidTo() == null) {
                 openVersions++;
             }

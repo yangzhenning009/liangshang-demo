@@ -10,6 +10,7 @@
             <h1 th:text="${form.id == null} ? '新建员工' : '编辑员工'">编辑员工</h1>
             <p class="lede">一名自然人只能有一份员工档案。下拉框只列出尚未建档的自然人，以及当前档案已关联的人。</p>
         </div>
+        <a class="btn secondary" th:if="${form.id != null}" th:href="@{/employees/{id}(id=${form.id})}">任职明细</a>
         <a class="btn secondary" th:href="@{/employees}">返回列表</a>
     </div>
     <form class="panel" th:object="${form}" th:action="@{/employees}" method="post">

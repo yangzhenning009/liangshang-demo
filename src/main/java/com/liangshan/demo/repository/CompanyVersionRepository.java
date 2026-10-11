@@ -12,4 +12,6 @@ public interface CompanyVersionRepository extends JpaRepository<CompanyVersion, 
     List<CompanyVersion> findByLegalPersonId(Long legalPersonId);
 
     List<CompanyVersion> findByHeadCompanyId(Long headCompanyId);
+
+    boolean existsByBasisDocumentId(Long basisDocumentId);
 }

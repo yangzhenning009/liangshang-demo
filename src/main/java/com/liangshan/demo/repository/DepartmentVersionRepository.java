@@ -12,4 +12,6 @@ public interface DepartmentVersionRepository extends JpaRepository<DepartmentVer
     List<DepartmentVersion> findByCompanyId(Long companyId);
 
     List<DepartmentVersion> findByDepartmentHeadEmployeeId(Long departmentHeadEmployeeId);
+
+    boolean existsByBasisDocumentId(Long basisDocumentId);
 }

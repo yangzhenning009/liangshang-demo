@@ -8,7 +8,7 @@
     <div class="page-head">
         <div>
             <h1>员工</h1>
-            <p class="lede">员工是独立人事档案，通过 person_id 对应一名自然人。姓名以自然人记录为准。入离职和任职不在这一页。</p>
+            <p class="lede">员工是独立人事档案，通过 person_id 对应一名自然人。姓名以自然人记录为准。入离职、部门任职和汇报写在任职明细里。</p>
         </div>
         <a class="btn" th:href="@{/employees/new}">新建员工</a>
     </div>
@@ -36,6 +36,7 @@
                     <td th:text="${@labels.dash(item.workPhone)}">—</td>
                     <td><span class="badge" th:text="${item.status}">有效</span></td>
                     <td class="actions">
+                        <a th:href="@{/employees/{id}(id=${item.id})}">任职</a>
                         <a th:href="@{/employees/{id}/edit(id=${item.id})}">编辑</a>
                         <form class="inline" th:action="@{/employees/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('删除该员工档案？仍被部门引用为负责人时会拒绝。');">
                             <button class="danger small" type="submit">删除</button>

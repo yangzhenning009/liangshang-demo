@@ -5,6 +5,7 @@ import com.liangshan.demo.repository.DepartmentRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.LegalPersonRepository;
 import com.liangshan.demo.repository.PersonRepository;
+import com.liangshan.demo.repository.SourceDocumentRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,18 +19,21 @@ public class HomeController {
     private final PersonRepository persons;
     private final EmployeeRepository employees;
     private final DepartmentRepository departments;
+    private final SourceDocumentRepository documents;
 
     public HomeController(
             LegalPersonRepository legalPersons,
             CompanyRepository companies,
             PersonRepository persons,
             EmployeeRepository employees,
-            DepartmentRepository departments) {
+            DepartmentRepository departments,
+            SourceDocumentRepository documents) {
         this.legalPersons = legalPersons;
         this.companies = companies;
         this.persons = persons;
         this.employees = employees;
         this.departments = departments;
+        this.documents = documents;
     }
 
     @ModelAttribute("activeNav")
@@ -44,6 +48,7 @@ public class HomeController {
         model.addAttribute("personCount", persons.count());
         model.addAttribute("employeeCount", employees.count());
         model.addAttribute("departmentCount", departments.count());
+        model.addAttribute("documentCount", documents.count());
         return "home";
     }
 }

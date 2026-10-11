@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>来源材料 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建来源材料' : '编辑来源材料'">编辑来源材料</h1>
+            <p class="lede">类型和文号可以暂缺。出具对象在公司、法人、自然人中最多选一个。文件位置只记录存储路径，这一版不上传文件本体。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/source-documents}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="@{/source-documents}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">材料类型
+                <input th:field="*{documentType}" placeholder="例如：劳动合同">
+            </label>
+            <label class="field">文号
+                <input th:field="*{documentNumber}" placeholder="未知则留空">
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${documentStatuses}" th:value="${status}" th:text="${status}">有效</option>
+                </select>
+            </label>
+            <label class="field">出具日
+                <input type="date" th:field="*{issuedAt}">
+            </label>
+            <label class="field">出具公司
+                <select th:field="*{issuerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">出具法人
+                <select th:field="*{issuerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">出具自然人
+                <select th:field="*{issuerPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">编制员工
+                <select th:field="*{preparedByEmployeeId}">
+                    <option value="">不选</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+            <label class="field">上传员工
+                <select th:field="*{uploadedByEmployeeId}">
+                    <option value="">不选</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+            <label class="field">上传时间
+                <input type="datetime-local" th:field="*{uploadedAt}">
+            </label>
+            <label class="field span-2">存储位置
+                <input th:field="*{fileStorageUri}" placeholder="例如：file://archive/hr/songjiang.pdf">
+            </label>
+            <label class="field">文件名
+                <input th:field="*{fileName}">
+            </label>
+            <label class="field">格式
+                <input th:field="*{mimeType}" placeholder="application/pdf">
+            </label>
+            <label class="field">校验摘要
+                <input th:field="*{fileChecksum}">
+            </label>
+            <label class="field span-2">内容摘要
+                <textarea th:field="*{contentSummary}"></textarea>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

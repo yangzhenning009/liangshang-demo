@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>来源材料 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>来源材料</h1>
+            <p class="lede">登记证照、合同和任职依据的材料本身。业务记录只保存材料 ID，不把材料当成另一套主体。</p>
+        </div>
+        <a class="btn" th:href="@{/source-documents/new}">新建材料</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>类型</th>
+                    <th>文号</th>
+                    <th>出具对象</th>
+                    <th>出具日</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="7" class="empty">还没有来源材料。公司登记、股东、部门和雇佣都可以引用这里的记录。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="'#' + ${item.id}">#1</td>
+                    <td th:text="${@labels.dash(item.documentType)}">劳动合同</td>
+                    <td th:text="${@labels.dash(item.documentNumber)}">LD-1</td>
+                    <td th:text="${@labels.dash(item.issuer)}">梁山</td>
+                    <td th:text="${@labels.dash(item.issuedAt)}">2020-01-01</td>
+                    <td><span class="badge" th:text="${item.status}">有效</span></td>
+                    <td class="actions">
+                        <a th:href="@{/source-documents/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/source-documents/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('删除该材料？仍被业务记录引用时会拒绝。');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

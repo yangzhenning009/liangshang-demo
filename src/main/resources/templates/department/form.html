@@ -98,8 +98,8 @@
                     <label class="field">结束
                         <input type="date" th:field="*{serviceCompanies[__${stat.index}__].validTo}">
                     </label>
-                    <label class="field">依据文档 ID
-                        <input type="number" th:field="*{serviceCompanies[__${stat.index}__].basisDocumentId}">
+                    <label class="field">依据材料
+                        <select th:replace="~{fragments/document-select :: bound('serviceCompanies[__${stat.index}__].basisDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -123,8 +123,8 @@
                     <label class="field">结束日
                         <input type="date" th:field="*{versions[__${stat.index}__].validTo}">
                     </label>
-                    <label class="field">依据文档 ID
-                        <input type="number" th:field="*{versions[__${stat.index}__].basisDocumentId}">
+                    <label class="field">依据材料
+                        <select th:replace="~{fragments/document-select :: bound('versions[__${stat.index}__].basisDocumentId')}"></select>
                     </label>
                 </div>
             </div>
@@ -156,8 +156,8 @@
                 <label class="field">结束
                     <input type="date" name="serviceCompanies[__INDEX__].validTo">
                 </label>
-                <label class="field">依据文档 ID
-                    <input type="number" name="serviceCompanies[__INDEX__].basisDocumentId">
+                <label class="field">依据材料
+                    <select th:replace="~{fragments/document-select :: named('serviceCompanies[__INDEX__].basisDocumentId')}"></select>
                 </label>
             </div>
         </div>

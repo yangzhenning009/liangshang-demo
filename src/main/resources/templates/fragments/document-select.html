@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<select th:fragment="bound(path)" th:field="*{__${path}__}">
+    <option value="">不引用</option>
+    <option th:each="doc : ${sourceDocuments}" th:value="${doc.id}" th:text="${doc.label}"></option>
+</select>
+<select th:fragment="named(fieldName)" th:name="${fieldName}">
+    <option value="">不引用</option>
+    <option th:each="doc : ${sourceDocuments}" th:value="${doc.id}" th:text="${doc.label}"></option>
+</select>
+</body>
+</html>

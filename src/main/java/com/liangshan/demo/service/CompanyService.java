@@ -54,6 +54,7 @@ public class CompanyService {
     private final DepartmentVersionRepository departmentVersions;
     private final DepartmentServiceCompanyRepository serviceCompanies;
     private final IdentifierGuard identifiers;
+    private final SourceDocumentService documents;
 
     public record CompanyRow(
             Long id,
@@ -423,6 +424,7 @@ public class CompanyService {
             if (row.getValidTo() == null) {
                 openVersions++;
             }
+            documents.require(row.getBasisDocumentId(), errors, prefix + ".basisDocumentId");
         }
         if (openVersions > 1) {
             errors.add("versions", "同时只能有一条未结束的公司版本");
@@ -479,6 +481,9 @@ public class CompanyService {
         if (row.getBranchManagerPersonId() != null && persons.findById(row.getBranchManagerPersonId()).isEmpty()) {
             errors.add(prefix + ".branchManagerPersonId", "分公司负责人不存在");
         }
+        documents.require(row.getBusinessLicenseDocumentId(), errors, prefix + ".businessLicenseDocumentId");
+        documents.require(row.getTaxInformationSourceDocumentId(), errors, prefix + ".taxInformationSourceDocumentId");
+        documents.require(row.getSourceDocumentId(), errors, prefix + ".sourceDocumentId");
     }
 
     private void validateBank(FieldErrors errors, BankAccountForm row, String prefix) {
@@ -550,6 +555,7 @@ public class CompanyService {
             errors.add(prefix + ".validFrom", "请填写持股生效日");
         }
         errors.add(prefix + ".validTo", Periods.orderError(row.getValidFrom(), row.getValidTo()));
+        documents.require(row.getBasisDocumentId(), errors, prefix + ".basisDocumentId");
     }
 
     private void applyHeader(Company company, CompanyForm form) {
