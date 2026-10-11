@@ -355,13 +355,13 @@
                     </select>
                 </label>
                 <label class="field">营业执照材料
-                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].businessLicenseDocumentId')}"></select>
+                    <select th:replace="~{fragments/document-select :: named('registrations[IDX].businessLicenseDocumentId')}"></select>
                 </label>
                 <label class="field">税号材料
-                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].taxInformationSourceDocumentId')}"></select>
+                    <select th:replace="~{fragments/document-select :: named('registrations[IDX].taxInformationSourceDocumentId')}"></select>
                 </label>
                 <label class="field">来源材料
-                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].sourceDocumentId')}"></select>
+                    <select th:replace="~{fragments/document-select :: named('registrations[IDX].sourceDocumentId')}"></select>
                 </label>
             </div>
         </div>
@@ -432,7 +432,7 @@
                 <label class="field">生效日<input type="date" name="shareholdings[__INDEX__].validFrom"></label>
                 <label class="field">结束日<input type="date" name="shareholdings[__INDEX__].validTo"></label>
                 <label class="field">依据材料
-                    <select th:replace="~{fragments/document-select :: named('shareholdings[__INDEX__].basisDocumentId')}"></select>
+                    <select th:replace="~{fragments/document-select :: named('shareholdings[IDX].basisDocumentId')}"></select>
                 </label>
             </div>
         </div>

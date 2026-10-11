@@ -31,7 +31,7 @@ function removeRow(button) {
 function reindex(container) {
     container.querySelectorAll(":scope > .repeat-row").forEach((row, index) => {
         row.querySelectorAll("[name]").forEach((field) => {
-            field.name = field.name.replace(/\[(?:\d+|__INDEX__)\]/, "[" + index + "]");
+            field.name = field.name.replace(/\[(?:\d+|__INDEX__|IDX)\]/, "[" + index + "]");
         });
     });
 }

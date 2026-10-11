@@ -189,7 +189,7 @@
                     <input type="date" name="registrations[__INDEX__].validTo">
                 </label>
                 <label class="field">来源材料
-                    <select th:replace="~{fragments/document-select :: named('registrations[__INDEX__].sourceDocumentId')}"></select>
+                    <select th:replace="~{fragments/document-select :: named('registrations[IDX].sourceDocumentId')}"></select>
                 </label>
             </div>
         </div>
@@ -215,7 +215,7 @@
                     <input type="date" name="representativeTerms[__INDEX__].validTo">
                 </label>
                 <label class="field">依据材料
-                    <select th:replace="~{fragments/document-select :: named('representativeTerms[__INDEX__].basisDocumentId')}"></select>
+                    <select th:replace="~{fragments/document-select :: named('representativeTerms[IDX].basisDocumentId')}"></select>
                 </label>
             </div>
         </div>
