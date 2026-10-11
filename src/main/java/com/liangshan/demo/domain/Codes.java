@@ -39,6 +39,11 @@ public final class Codes {
     public static final List<String> SUPPLY_CATEGORY_STATUS = List.of("有效", "停用");
     public static final List<String> QUALIFICATION_REVIEW_STATUS = List.of("待审核", "通过", "驳回");
     public static final List<String> QUALIFICATION_STATUS = List.of("有效", "停用");
+    public static final List<String> PROJECT_TYPES = List.of("客户交付", "内部建设", "其他");
+    public static final List<String> PROJECT_STATUS = List.of("筹备", "进行中", "暂停", "结项", "取消");
+    public static final List<String> PROJECT_ROLES = List.of("交付负责人", "设计", "实施", "其他");
+    public static final List<String> BUDGET_COST_BASIS = List.of("标准人工", "工资成本");
+    public static final List<String> BUDGET_APPROVAL_STATUS = List.of("草稿", "待审批", "已批准", "驳回");
 
     private Codes() {
     }

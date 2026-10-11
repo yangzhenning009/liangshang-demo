@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>项目档案 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建项目' : '编辑项目'">项目档案</h1>
+            <p class="lede">客户在公司、法人、自然人中最多选一个，内部项目可以不填。牵头部门须属于项目管理公司。保存时写入管理版本。</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:if="${form.id != null}" th:href="@{/projects/{id}(id=${form.id})}">查看详情</a>
+            <a class="btn secondary" th:href="@{/projects}">返回列表</a>
+        </div>
+    </div>
+    <form class="panel" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/projects} : @{/projects/{id}(id=${form.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <h2>项目身份</h2>
+        <div class="grid">
+            <label class="field">项目编号
+                <input th:field="*{projectCode}">
+            </label>
+            <label class="field">名称
+                <input th:field="*{name}">
+            </label>
+            <label class="field">类型
+                <select th:field="*{projectType}">
+                    <option th:each="type : ${projectTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${projectStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field span-2">范围
+                <textarea th:field="*{projectScopeDescription}"></textarea>
+            </label>
+        </div>
+        <h2>客户与管理</h2>
+        <div class="grid">
+            <label class="field">客户公司
+                <select th:field="*{customerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">客户法人
+                <select th:field="*{customerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">客户自然人
+                <select th:field="*{customerPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">管理公司
+                <select th:field="*{ownerCompanyId}">
+                    <option value="">请选择</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">牵头部门
+                <select th:field="*{leadDepartmentId}">
+                    <option value="">未指定</option>
+                    <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                            th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                </select>
+            </label>
+            <label class="field">项目经理
+                <select th:field="*{projectManagerEmployeeId}">
+                    <option value="">未指定</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+            <label class="field">预算币种
+                <input th:field="*{budgetCurrency}" placeholder="CNY">
+            </label>
+        </div>
+        <h2>计划与实际</h2>
+        <p class="hint">筹备阶段不填实际日期。结项时填写结项日。计划日期变化会写入项目版本；实际日期和状态只改当前档案。</p>
+        <div class="grid">
+            <label class="field">计划开始
+                <input type="date" th:field="*{plannedStartAt}">
+            </label>
+            <label class="field">计划结束
+                <input type="date" th:field="*{plannedEndAt}">
+            </label>
+            <label class="field">实际启动
+                <input type="date" th:field="*{actualStartAt}">
+            </label>
+            <label class="field">实际完成
+                <input type="date" th:field="*{actualCompletedAt}">
+            </label>
+            <label class="field">结项日
+                <input type="date" th:field="*{closedAt}">
+            </label>
+            <label class="field">版本依据
+                <select th:replace="~{fragments/document-select :: bound('basisDocumentId')}"></select>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存项目</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

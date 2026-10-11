@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>项目详情 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${header.projectCode + ' ' + header.name}">项目详情</h1>
+            <p class="lede" th:text="${header.ownerCompany + ' · ' + header.customer}">管理公司与客户</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:href="@{/projects/{id}/edit(id=${header.id})}">编辑档案</a>
+            <a class="btn secondary" th:href="@{/projects}">返回列表</a>
+        </div>
+    </div>
+    <section class="panel">
+        <h2>当前状态</h2>
+        <p>
+            <span class="badge" th:text="${header.projectType}">类型</span>
+            <span class="badge" th:text="${header.status}">状态</span>
+            <span class="badge" th:text="'当前批准预算 ' + ${header.approvedBudget}">预算</span>
+        </p>
+        <p class="hint">成员的雇佣和任职必须是同一名员工，成员期间落在对应有效期内。预算金额留空表示尚未编制，不会按零加总。两项都填写后，总额为人工加非人工。</p>
+    </section>
+
+    <form class="panel" th:object="${form}" method="post" th:action="@{/projects/{id}/details(id=${header.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+
+        <h2>成员</h2>
+        <div id="member-rows">
+            <div class="repeat-row" th:each="row, stat : *{members}">
+                <div class="row-tools">
+                    <strong>成员</strong>
+                    <label class="check"><input type="checkbox" th:field="*{members[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{members[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">员工
+                        <select th:field="*{members[__${stat.index}__].employeeId}">
+                            <option value="">请选择</option>
+                            <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                    th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">雇佣
+                        <select th:field="*{members[__${stat.index}__].employmentId}">
+                            <option value="">请选择</option>
+                            <option th:each="choice : ${employmentChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">任职
+                        <select th:field="*{members[__${stat.index}__].departmentAssignmentId}">
+                            <option value="">不指定</option>
+                            <option th:each="choice : ${assignmentChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">角色
+                        <select th:field="*{members[__${stat.index}__].projectRole}">
+                            <option th:each="role : ${projectRoles}" th:value="${role}" th:text="${role}"></option>
+                        </select>
+                    </label>
+                    <label class="field">计划工时
+                        <input type="number" step="0.01" min="0" th:field="*{members[__${stat.index}__].plannedHours}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{members[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{members[__${stat.index}__].validTo}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{members.isEmpty()}">还没有成员。</p>
+        <button class="secondary" type="button" onclick="addRow('member-rows','member-template')">增加成员</button>
+
+        <h2>预算版本</h2>
+        <div id="budget-rows">
+            <div class="repeat-row" th:each="row, stat : *{budgets}">
+                <div class="row-tools">
+                    <strong>预算</strong>
+                    <span class="hint" th:text="'总额 ' + ${@labels.budgetTotal(row.laborCostBudgetAmount, row.nonlaborCostBudgetAmount)}">总额</span>
+                    <label class="check"><input type="checkbox" th:field="*{budgets[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{budgets[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">版本号
+                        <input type="number" min="1" th:field="*{budgets[__${stat.index}__].versionNumber}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{budgets[__${stat.index}__].budgetCurrency}" placeholder="CNY">
+                    </label>
+                    <label class="field">计划工时
+                        <input type="number" step="0.01" min="0" th:field="*{budgets[__${stat.index}__].plannedLaborHours}">
+                    </label>
+                    <label class="field">人工金额
+                        <input type="number" step="0.01" min="0" th:field="*{budgets[__${stat.index}__].laborCostBudgetAmount}">
+                    </label>
+                    <label class="field">非人工金额
+                        <input type="number" step="0.01" min="0" th:field="*{budgets[__${stat.index}__].nonlaborCostBudgetAmount}">
+                    </label>
+                    <label class="field">成本口径
+                        <select th:field="*{budgets[__${stat.index}__].budgetCostBasis}">
+                            <option value="">未选择</option>
+                            <option th:each="basis : ${costBases}" th:value="${basis}" th:text="${basis}"></option>
+                        </select>
+                    </label>
+                    <label class="field">审批
+                        <select th:field="*{budgets[__${stat.index}__].approvalStatus}">
+                            <option th:each="status : ${approvalStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="field">提交时间
+                        <input type="datetime-local" th:field="*{budgets[__${stat.index}__].submittedAt}">
+                    </label>
+                    <label class="field">审批人
+                        <select th:field="*{budgets[__${stat.index}__].approvedByEmployeeId}">
+                            <option value="">未审批</option>
+                            <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                    th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">审批时间
+                        <input type="datetime-local" th:field="*{budgets[__${stat.index}__].approvedAt}">
+                    </label>
+                    <label class="field">生效
+                        <input type="date" th:field="*{budgets[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{budgets[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据
+                        <select th:replace="~{fragments/document-select :: bound('budgets[__${stat.index}__].basisDocumentId')}"></select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{budgets.isEmpty()}">还没有预算版本。</p>
+        <button class="secondary" type="button" onclick="addRow('budget-rows','budget-template')">增加预算</button>
+
+        <h2>交付公司</h2>
+        <div id="delivery-rows">
+            <div class="repeat-row" th:each="row, stat : *{deliveries}">
+                <div class="row-tools">
+                    <strong>交付</strong>
+                    <label class="check"><input type="checkbox" th:field="*{deliveries[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{deliveries[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">交付公司
+                        <select th:field="*{deliveries[__${stat.index}__].deliveryCompanyId}">
+                            <option value="">请选择</option>
+                            <option th:each="company : ${companies}" th:value="${company.id}"
+                                    th:text="${company.companyCode + ' ' + company.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">牵头部门
+                        <select th:field="*{deliveries[__${stat.index}__].leadDepartmentId}">
+                            <option value="">未指定</option>
+                            <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                                    th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                        </select>
+                    </label>
+                    <label class="field span-2">责任
+                        <input th:field="*{deliveries[__${stat.index}__].responsibilityDescription}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{deliveries[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{deliveries[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">依据
+                        <select th:replace="~{fragments/document-select :: bound('deliveries[__${stat.index}__].basisDocumentId')}"></select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{deliveries.isEmpty()}">还没有交付公司。</p>
+        <button class="secondary" type="button" onclick="addRow('delivery-rows','delivery-template')">增加交付公司</button>
+
+        <h2>支持部门</h2>
+        <div id="support-rows">
+            <div class="repeat-row" th:each="row, stat : *{supports}">
+                <div class="row-tools">
+                    <strong>支持</strong>
+                    <label class="check"><input type="checkbox" th:field="*{supports[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{supports[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">部门
+                        <select th:field="*{supports[__${stat.index}__].departmentId}">
+                            <option value="">请选择</option>
+                            <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                                    th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                        </select>
+                    </label>
+                    <label class="field span-2">责任
+                        <input th:field="*{supports[__${stat.index}__].responsibilityDescription}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{supports[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{supports[__${stat.index}__].validTo}">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{supports.isEmpty()}">还没有支持部门。</p>
+        <button class="secondary" type="button" onclick="addRow('support-rows','support-template')">增加支持部门</button>
+
+        <div class="form-actions">
+            <button type="submit">保存明细</button>
+        </div>
+    </form>
+
+    <section class="panel">
+        <h2>管理版本</h2>
+        <p class="hint">初始建档即有版本。客户、管理公司、负责人、类型、范围、名称和计划日期的变化在保存档案时写入。</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>版本</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>计划开始</th>
+                    <th>计划结束</th>
+                    <th>生效</th>
+                    <th>结束</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${versions.isEmpty()}">
+                    <td colspan="7" class="empty">还没有版本。</td>
+                </tr>
+                <tr th:each="version : ${versions}">
+                    <td th:text="${version.versionNumber}">1</td>
+                    <td th:text="${version.name}">名称</td>
+                    <td th:text="${version.projectType}">类型</td>
+                    <td th:text="${version.plannedStartAt}">开始</td>
+                    <td th:text="${version.plannedEndAt}">结束</td>
+                    <td th:text="${version.validFrom}">生效</td>
+                    <td th:text="${version.validTo == null} ? '当前' : ${version.validTo}">当前</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div id="member-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>成员</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="members[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">员工
+                    <select name="members[__INDEX__].employeeId">
+                        <option value="">请选择</option>
+                        <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                    </select>
+                </label>
+                <label class="field">雇佣
+                    <select name="members[__INDEX__].employmentId">
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${employmentChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">任职
+                    <select name="members[__INDEX__].departmentAssignmentId">
+                        <option value="">不指定</option>
+                        <option th:each="choice : ${assignmentChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">角色
+                    <select name="members[__INDEX__].projectRole">
+                        <option th:each="role : ${projectRoles}" th:value="${role}" th:text="${role}"></option>
+                    </select>
+                </label>
+                <label class="field">计划工时
+                    <input type="number" step="0.01" min="0" name="members[__INDEX__].plannedHours">
+                </label>
+                <label class="field">开始
+                    <input type="date" name="members[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="members[__INDEX__].validTo">
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="budget-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>预算</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="budgets[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">版本号
+                    <input type="number" min="1" name="budgets[__INDEX__].versionNumber">
+                </label>
+                <label class="field">币种
+                    <input name="budgets[__INDEX__].budgetCurrency" placeholder="CNY">
+                </label>
+                <label class="field">计划工时
+                    <input type="number" step="0.01" min="0" name="budgets[__INDEX__].plannedLaborHours">
+                </label>
+                <label class="field">人工金额
+                    <input type="number" step="0.01" min="0" name="budgets[__INDEX__].laborCostBudgetAmount">
+                </label>
+                <label class="field">非人工金额
+                    <input type="number" step="0.01" min="0" name="budgets[__INDEX__].nonlaborCostBudgetAmount">
+                </label>
+                <label class="field">成本口径
+                    <select name="budgets[__INDEX__].budgetCostBasis">
+                        <option value="">未选择</option>
+                        <option th:each="basis : ${costBases}" th:value="${basis}" th:text="${basis}"></option>
+                    </select>
+                </label>
+                <label class="field">审批
+                    <select name="budgets[__INDEX__].approvalStatus">
+                        <option th:each="status : ${approvalStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="field">提交时间
+                    <input type="datetime-local" name="budgets[__INDEX__].submittedAt">
+                </label>
+                <label class="field">审批人
+                    <select name="budgets[__INDEX__].approvedByEmployeeId">
+                        <option value="">未审批</option>
+                        <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                    </select>
+                </label>
+                <label class="field">审批时间
+                    <input type="datetime-local" name="budgets[__INDEX__].approvedAt">
+                </label>
+                <label class="field">生效
+                    <input type="date" name="budgets[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="budgets[__INDEX__].validTo">
+                </label>
+                <label class="field">依据
+                    <select th:replace="~{fragments/document-select :: named('budgets[IDX].basisDocumentId')}"></select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="delivery-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>交付</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="deliveries[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">交付公司
+                    <select name="deliveries[__INDEX__].deliveryCompanyId">
+                        <option value="">请选择</option>
+                        <option th:each="company : ${companies}" th:value="${company.id}"
+                                th:text="${company.companyCode + ' ' + company.name}"></option>
+                    </select>
+                </label>
+                <label class="field">牵头部门
+                    <select name="deliveries[__INDEX__].leadDepartmentId">
+                        <option value="">未指定</option>
+                        <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                                th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                    </select>
+                </label>
+                <label class="field span-2">责任
+                    <input name="deliveries[__INDEX__].responsibilityDescription">
+                </label>
+                <label class="field">开始
+                    <input type="date" name="deliveries[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="deliveries[__INDEX__].validTo">
+                </label>
+                <label class="field">依据
+                    <select th:replace="~{fragments/document-select :: named('deliveries[IDX].basisDocumentId')}"></select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="support-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>支持</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="supports[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">部门
+                    <select name="supports[__INDEX__].departmentId">
+                        <option value="">请选择</option>
+                        <option th:each="dept : ${departmentRows}" th:value="${dept.id}"
+                                th:text="${dept.departmentCode + ' ' + dept.name + ' · ' + dept.companyName}"></option>
+                    </select>
+                </label>
+                <label class="field span-2">责任
+                    <input name="supports[__INDEX__].responsibilityDescription">
+                </label>
+                <label class="field">开始
+                    <input type="date" name="supports[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="supports[__INDEX__].validTo">
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

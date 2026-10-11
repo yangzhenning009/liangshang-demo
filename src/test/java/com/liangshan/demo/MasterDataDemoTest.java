@@ -18,7 +18,13 @@ import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
+import com.liangshan.demo.domain.ProjectBudgetVersion;
+import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
+import com.liangshan.demo.repository.ProjectRepository;
+import com.liangshan.demo.repository.ProjectVersionRepository;
 import com.liangshan.demo.service.PersonService;
+import com.liangshan.demo.service.ProjectService;
 import com.liangshan.demo.service.SupplierService;
 import com.liangshan.demo.web.form.CompanyForm;
 import com.liangshan.demo.web.form.DepartmentForm;
@@ -31,6 +37,12 @@ import com.liangshan.demo.web.form.SourceDocumentForm;
 import com.liangshan.demo.web.form.SupplierDetailForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
+import com.liangshan.demo.web.form.ProjectDetailForm;
+import com.liangshan.demo.web.form.ProjectDetailForm.BudgetForm;
+import com.liangshan.demo.web.form.ProjectDetailForm.DeliveryForm;
+import com.liangshan.demo.web.form.ProjectDetailForm.MemberForm;
+import com.liangshan.demo.web.form.ProjectDetailForm.SupportForm;
+import com.liangshan.demo.web.form.ProjectForm;
 import com.liangshan.demo.web.form.SupplierForm;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.function.Executable;
@@ -115,6 +127,14 @@ class MasterDataDemoTest {
     private SupplierRepository supplierRepository;
     @Autowired
     private SupplierVersionRepository supplierVersions;
+    @Autowired
+    private ProjectService projectService;
+    @Autowired
+    private ProjectRepository projectRepository;
+    @Autowired
+    private ProjectVersionRepository projectVersions;
+    @Autowired
+    private ProjectBudgetVersionRepository projectBudgets;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -160,7 +180,22 @@ class MasterDataDemoTest {
                 "supplier_contact",
                 "supplier_supply_category",
                 "supplier_qualification",
-                "supplier_version")));
+                "supplier_version",
+                "project",
+                "project_member",
+                "project_budget_version",
+                "project_version",
+                "project_delivery_company",
+                "project_support_department")));
+        assertEquals("integer", String.valueOf(column("project_version", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(1, ((Number) column("project", "owner_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("project", "customer_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("project", "customer_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("project", "customer_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("project_budget_version", "labor_cost_budget_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("project_budget_version", "nonlabor_cost_budget_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("project_member", "department_assignment_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("project_member", "employment_id").get("notnull")).intValue());
         Map<String, Object> supplierId = column("supplier_version", "id");
         assertEquals("integer", String.valueOf(supplierId.get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("supplier", "supplier_code").get("notnull")).intValue());
@@ -183,7 +218,8 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("公司")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("供应商")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("基础管理")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("采购")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("采购")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("项目管理")));
     }
 
     @Test
@@ -604,6 +640,149 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("甲供档案")));
     }
 
+    @Test
+    void projectMembersBudgetsAndVersions() throws Exception {
+        assertNull(ProjectService.budgetTotal(null, new BigDecimal("100.00")));
+        assertNull(ProjectService.budgetTotal(new BigDecimal("10.00"), null));
+        assertEquals(0, new BigDecimal("5.00").compareTo(ProjectService.budgetTotal(BigDecimal.ZERO, new BigDecimal("5.00"))));
+        assertEquals(0, new BigDecimal("30.00").compareTo(ProjectService.budgetTotal(new BigDecimal("10.00"), new BigDecimal("20.00"))));
+
+        long ownerId = companyForOrg("WP05-OWN", "项目主公司");
+        long otherCompanyId = companyForOrg("WP05-OTH", "项目另一公司");
+        long departmentId = department(ownerId, "WP05-D", "项目部");
+        long otherDepartmentId = department(otherCompanyId, "WP05-X", "外部门");
+        long customerId = person("WP05客户");
+        long memberId = employee("武松", "WP05-E1");
+        long otherMemberId = employee("鲁智深", "WP05-E2");
+        long employmentId = employ(memberId, ownerId, departmentId, "WP05-GH1");
+        long otherEmploymentId = employ(otherMemberId, ownerId, departmentId, "WP05-GH2");
+        long assignmentId = organizations.form(memberId).getAssignments().get(0).getId();
+
+        ProjectForm twoCustomers = project("PJ-TWO", "两个客户", ownerId);
+        twoCustomers.setCustomerCompanyId(otherCompanyId);
+        twoCustomers.setCustomerPersonId(customerId);
+        assertTrue(messageOf(() -> projectService.save(twoCustomers)).contains("最多选择一个"));
+
+        ProjectForm wrongDepartment = project("PJ-DEPT", "错部门", ownerId);
+        wrongDepartment.setLeadDepartmentId(otherDepartmentId);
+        assertTrue(messageOf(() -> projectService.save(wrongDepartment)).contains("牵头部门"));
+
+        ProjectForm first = project("PJ-A", "聚义厅", ownerId);
+        first.setCustomerPersonId(customerId);
+        first.setLeadDepartmentId(departmentId);
+        first.setProjectManagerEmployeeId(memberId);
+        long projectId = projectService.save(first);
+        List<ProjectVersion> created = projectVersions.findByProjectIdOrderByVersionNumberAsc(projectId);
+        assertEquals(1, created.size());
+        assertEquals("聚义厅", created.get(0).name);
+        assertEquals(LocalDate.now(), created.get(0).validFrom);
+        assertNull(created.get(0).validTo);
+        assertNull(projectRepository.findById(projectId).orElseThrow().approvedBudgetVersionId);
+
+        ProjectForm duplicate = project("PJ-A", "重复编号", ownerId);
+        assertTrue(messageOf(() -> projectService.save(duplicate)).contains("项目编号已存在"));
+
+        ProjectDetailForm details = new ProjectDetailForm();
+        MemberForm foreignEmployment = member(memberId, otherEmploymentId, null, LocalDate.of(2020, 6, 1));
+        details.getMembers().add(foreignEmployment);
+        assertTrue(messageOf(() -> projectService.saveDetails(projectId, details)).contains("不属于该员工"));
+        foreignEmployment.setEmploymentId(employmentId);
+        foreignEmployment.setValidFrom(LocalDate.of(2019, 1, 1));
+        assertTrue(messageOf(() -> projectService.saveDetails(projectId, details)).contains("雇佣有效期"));
+        foreignEmployment.setValidFrom(LocalDate.of(2020, 6, 1));
+        foreignEmployment.setDepartmentAssignmentId(organizations.form(otherMemberId).getAssignments().get(0).getId());
+        assertTrue(messageOf(() -> projectService.saveDetails(projectId, details)).contains("任职不属于"));
+        foreignEmployment.setDepartmentAssignmentId(assignmentId);
+
+        BudgetForm partial = budget(1, null, new BigDecimal("100.00"));
+        details.getBudgets().add(partial);
+        projectService.saveDetails(projectId, details);
+        ProjectBudgetVersion storedPartial = projectBudgets.findByProjectIdOrderByVersionNumberAsc(projectId).get(0);
+        assertNull(storedPartial.laborCostBudgetAmount);
+        assertEquals(0, new BigDecimal("100.00").compareTo(storedPartial.nonlaborCostBudgetAmount));
+        assertNull(projectRepository.findById(projectId).orElseThrow().approvedBudgetVersionId);
+
+        ProjectDetailForm priced = projectService.detailForm(projectId);
+        BudgetForm amounts = priced.getBudgets().get(0);
+        amounts.setLaborCostBudgetAmount(new BigDecimal("10.00"));
+        amounts.setNonlaborCostBudgetAmount(new BigDecimal("20.00"));
+        amounts.setPlannedLaborHours(new BigDecimal("8.00"));
+        amounts.setBudgetCostBasis("标准人工");
+        amounts.setApprovalStatus("已批准");
+        amounts.setSubmittedAt(LocalDateTime.now());
+        assertTrue(messageOf(() -> projectService.saveDetails(projectId, priced)).contains("审批人"));
+        amounts.setApprovedByEmployeeId(memberId);
+        amounts.setApprovedAt(LocalDateTime.now());
+        projectService.saveDetails(projectId, priced);
+        ProjectBudgetVersion approved = projectBudgets.findByProjectIdOrderByVersionNumberAsc(projectId).get(0);
+        assertEquals(0, new BigDecimal("30.00").compareTo(ProjectService.budgetTotal(
+                approved.laborCostBudgetAmount, approved.nonlaborCostBudgetAmount)));
+        assertEquals(approved.id, projectRepository.findById(projectId).orElseThrow().approvedBudgetVersionId);
+
+        amounts.setLaborCostBudgetAmount(BigDecimal.ZERO);
+        amounts.setNonlaborCostBudgetAmount(new BigDecimal("5.00"));
+        projectService.saveDetails(projectId, priced);
+        ProjectBudgetVersion zeroLabor = projectBudgets.findByProjectIdOrderByVersionNumberAsc(projectId).get(0);
+        assertEquals(0, BigDecimal.ZERO.compareTo(zeroLabor.laborCostBudgetAmount));
+        assertEquals(0, new BigDecimal("5.00").compareTo(ProjectService.budgetTotal(
+                zeroLabor.laborCostBudgetAmount, zeroLabor.nonlaborCostBudgetAmount)));
+
+        ProjectDetailForm staffing = projectService.detailForm(projectId);
+        DeliveryForm wrongLead = new DeliveryForm();
+        wrongLead.setDeliveryCompanyId(ownerId);
+        wrongLead.setLeadDepartmentId(otherDepartmentId);
+        wrongLead.setResponsibilityDescription("现场交付");
+        wrongLead.setValidFrom(LocalDate.of(2020, 6, 1));
+        staffing.getDeliveries().add(wrongLead);
+        assertTrue(messageOf(() -> projectService.saveDetails(projectId, staffing)).contains("交付牵头部门"));
+        wrongLead.setLeadDepartmentId(departmentId);
+        SupportForm support = new SupportForm();
+        support.setDepartmentId(otherDepartmentId);
+        support.setResponsibilityDescription("跨公司支持");
+        support.setValidFrom(LocalDate.of(2020, 6, 1));
+        staffing.getSupports().add(support);
+        projectService.saveDetails(projectId, staffing);
+
+        SourceDocumentForm document = new SourceDocumentForm();
+        document.setDocumentType("预算批复");
+        document.setDocumentNumber("YS-WP05");
+        document.setStatus("有效");
+        long documentId = sourceDocuments.save(document);
+        ProjectDetailForm withDocument = projectService.detailForm(projectId);
+        withDocument.getBudgets().get(0).setBasisDocumentId(documentId);
+        projectService.saveDetails(projectId, withDocument);
+        assertTrue(messageOf(() -> sourceDocuments.delete(documentId)).contains("仍被业务记录引用"));
+
+        ProjectForm statusOnly = projectService.form(projectId);
+        statusOnly.setStatus("进行中");
+        statusOnly.setActualStartAt(LocalDate.now());
+        projectService.save(statusOnly);
+        assertEquals(1, projectVersions.findByProjectIdOrderByVersionNumberAsc(projectId).size());
+
+        ProjectVersion open = projectVersions.findByProjectIdOrderByVersionNumberAsc(projectId).stream()
+                .filter(version -> version.validTo == null)
+                .findFirst()
+                .orElseThrow();
+        open.validFrom = LocalDate.now().minusDays(1);
+        projectVersions.save(open);
+        ProjectForm renamed = projectService.form(projectId);
+        renamed.setName("聚义厅扩建");
+        projectService.save(renamed);
+        List<ProjectVersion> history = projectVersions.findByProjectIdOrderByVersionNumberAsc(projectId);
+        assertEquals(2, history.size());
+        assertEquals(LocalDate.now(), history.get(0).validTo);
+        assertEquals("聚义厅扩建", history.get(1).name);
+        assertEquals("聚义厅扩建", projectRepository.findById(projectId).orElseThrow().name);
+
+        mvc.perform(get("/projects"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("聚义厅扩建")));
+        mvc.perform(get("/projects/" + projectId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("跨公司支持")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("当前批准预算")));
+    }
+
     private String messageOf(Executable executable) {
         return assertThrows(FieldErrorsException.class, executable).getMessage();
     }
@@ -715,6 +894,49 @@ class MasterDataDemoTest {
         row.setNoExpiry(false);
         row.setReviewStatus("待审核");
         row.setStatus("有效");
+        return row;
+    }
+
+    private long employ(long employeeId, long companyId, long departmentId, String number) {
+        EmployeeOrgForm form = new EmployeeOrgForm();
+        form.setEmployeeId(employeeId);
+        EmploymentForm job = employment(number, companyId, null);
+        form.getEmployments().add(job);
+        form.getAssignments().add(assignment(job.getRowKey(), departmentId, LocalDate.of(2020, 1, 1), null));
+        organizations.save(employeeId, form);
+        return organizations.form(employeeId).getEmployments().get(0).getId();
+    }
+
+    private ProjectForm project(String code, String name, long ownerCompanyId) {
+        ProjectForm form = new ProjectForm();
+        form.setProjectCode(code);
+        form.setName(name);
+        form.setProjectType("客户交付");
+        form.setOwnerCompanyId(ownerCompanyId);
+        form.setPlannedStartAt(LocalDate.now());
+        form.setPlannedEndAt(LocalDate.now().plusMonths(6));
+        form.setStatus("筹备");
+        return form;
+    }
+
+    private MemberForm member(long employeeId, long employmentId, Long assignmentId, LocalDate from) {
+        MemberForm row = new MemberForm();
+        row.setEmployeeId(employeeId);
+        row.setEmploymentId(employmentId);
+        row.setDepartmentAssignmentId(assignmentId);
+        row.setProjectRole("实施");
+        row.setValidFrom(from);
+        return row;
+    }
+
+    private BudgetForm budget(int version, BigDecimal labor, BigDecimal nonlabor) {
+        BudgetForm row = new BudgetForm();
+        row.setVersionNumber(version);
+        row.setBudgetCurrency("CNY");
+        row.setLaborCostBudgetAmount(labor);
+        row.setNonlaborCostBudgetAmount(nonlabor);
+        row.setApprovalStatus("草稿");
+        row.setValidFrom(LocalDate.now().minusDays(1));
         return row;
     }
 

@@ -26,6 +26,7 @@ public class EmployeeService {
     private final DepartmentVersionRepository departmentVersions;
     private final EmployeeOrgService organizations;
     private final SupplierLinkGuard supplierLinks;
+    private final ProjectLinkGuard projectLinks;
 
     public record EmployeeRow(Long id, String employeeCode, String personName, String workEmail, String workPhone, String status) {
     }
@@ -96,6 +97,9 @@ public class EmployeeService {
         }
         if (supplierLinks.employeeUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该员工仍被供应商档案引用，不能删除"));
+        }
+        if (projectLinks.employeeUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该员工仍被项目引用，不能删除"));
         }
         employees.deleteById(id);
     }

@@ -49,6 +49,7 @@ public class EmployeeOrgService {
     private final LegalPersonRepository legalPersons;
     private final DepartmentRepository departments;
     private final SourceDocumentService documents;
+    private final ProjectLinkGuard projectLinks;
 
     public record Header(Long id, String employeeCode, String personName, String status) {
     }
@@ -508,6 +509,9 @@ public class EmployeeOrgService {
         }
         for (EmployeeEmployment existing : employments.findByEmployeeIdOrderByIdAsc(employeeId)) {
             if (!keep.contains(existing.id)) {
+                if (projectLinks.employmentUsed(existing.id)) {
+                    throw new FieldErrorsException(Map.of("*", "该雇佣仍被项目成员引用，不能删除"));
+                }
                 employments.delete(existing);
             }
         }
@@ -547,6 +551,9 @@ public class EmployeeOrgService {
         }
         for (EmployeeDepartmentAssignment existing : assignments.findByEmployeeIdOrderByIdAsc(employeeId)) {
             if (!keep.contains(existing.id)) {
+                if (projectLinks.assignmentUsed(existing.id)) {
+                    throw new FieldErrorsException(Map.of("*", "该任职仍被项目成员引用，不能删除"));
+                }
                 assignments.delete(existing);
             }
         }

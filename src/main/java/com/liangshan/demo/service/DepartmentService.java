@@ -41,6 +41,7 @@ public class DepartmentService {
     private final EmployeeRepository employees;
     private final PersonRepository persons;
     private final SourceDocumentService documents;
+    private final ProjectLinkGuard projectLinks;
 
     public record DepartmentRow(
             Long id,
@@ -155,6 +156,9 @@ public class DepartmentService {
         get(id);
         if (!departments.findByParentDepartmentId(id).isEmpty()) {
             throw new FieldErrorsException(Map.of("*", "仍有下级部门，不能删除"));
+        }
+        if (projectLinks.departmentUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该部门仍被项目引用，不能删除"));
         }
         versions.findByDepartmentIdOrderByVersionNumberAsc(id).forEach(versions::delete);
         serviceCompanies.findByDepartmentIdOrderByIdAsc(id).forEach(serviceCompanies::delete);

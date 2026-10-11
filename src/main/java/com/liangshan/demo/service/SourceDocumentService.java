@@ -46,6 +46,7 @@ public class SourceDocumentService {
     private final DepartmentVersionRepository departmentVersions;
     private final EmployeeEmploymentRepository employments;
     private final SupplierLinkGuard supplierLinks;
+    private final ProjectLinkGuard projectLinks;
 
     public record Option(Long id, String label) {
     }
@@ -190,7 +191,8 @@ public class SourceDocumentService {
                 || serviceCompanies.existsByBasisDocumentId(id)
                 || departmentVersions.existsByBasisDocumentId(id)
                 || employments.existsByEmploymentDocumentId(id)
-                || supplierLinks.documentUsed(id);
+                || supplierLinks.documentUsed(id)
+                || projectLinks.documentUsed(id);
     }
 
     private void normalize(SourceDocumentForm form) {

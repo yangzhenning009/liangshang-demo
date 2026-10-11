@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>项目 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>项目</h1>
+            <p class="lede">项目是管理和成本归集对象。客户可以暂不指定。预算是计划，不由合同金额或实际成本代替。</p>
+        </div>
+        <a class="btn" th:href="@{/projects/new}">新建项目</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>管理公司</th>
+                    <th>客户</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="7" class="empty">还没有项目。先确定管理公司和计划期间，再补成员和预算。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.projectCode}">PJ</td>
+                    <td th:text="${item.name}">项目</td>
+                    <td th:text="${item.projectType}">客户交付</td>
+                    <td th:text="${item.ownerCompany}">公司</td>
+                    <td th:text="${item.customer}">客户</td>
+                    <td><span class="badge" th:text="${item.status}">筹备</span></td>
+                    <td class="actions">
+                        <a th:href="@{/projects/{id}(id=${item.id})}">详情</a>
+                        <a th:href="@{/projects/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/projects/{id}/delete(id=${item.id})}" method="post"
+                              onsubmit="return confirm('删除该项目及其成员、预算、交付分工和版本？');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>
