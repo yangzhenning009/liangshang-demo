@@ -21,12 +21,15 @@
         </div>
         <nav class="nav">
             <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">首页</a>
+            <span class="nav-label">基础管理</span>
             <a th:href="@{/legal-persons}" th:classappend="${activeNav == 'legal-persons'} ? 'active'">法人</a>
             <a th:href="@{/companies}" th:classappend="${activeNav == 'companies'} ? 'active'">公司</a>
             <a th:href="@{/persons}" th:classappend="${activeNav == 'persons'} ? 'active'">自然人</a>
             <a th:href="@{/employees}" th:classappend="${activeNav == 'employees'} ? 'active'">员工</a>
             <a th:href="@{/departments}" th:classappend="${activeNav == 'departments'} ? 'active'">部门</a>
             <a th:href="@{/source-documents}" th:classappend="${activeNav == 'documents'} ? 'active'">来源材料</a>
+            <span class="nav-label">采购</span>
+            <a th:href="@{/suppliers}" th:classappend="${activeNav == 'suppliers'} ? 'active'">供应商</a>
         </nav>
         <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
     </aside>

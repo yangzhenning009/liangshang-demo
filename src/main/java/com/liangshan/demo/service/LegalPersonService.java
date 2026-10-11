@@ -38,6 +38,7 @@ public class LegalPersonService {
     private final CompanyShareholdingRepository shareholdings;
     private final IdentifierGuard identifiers;
     private final SourceDocumentService documents;
+    private final SupplierLinkGuard supplierLinks;
 
     public List<LegalPerson> list() {
         return legalPersons.findAllByOrderByLegalNameAsc();
@@ -116,6 +117,9 @@ public class LegalPersonService {
         }
         if (!shareholdings.findByShareholderLegalPersonId(id).isEmpty()) {
             throw new FieldErrorsException(java.util.Map.of("*", "该法人仍是股东，不能删除"));
+        }
+        if (supplierLinks.legalPersonUsed(id)) {
+            throw new FieldErrorsException(java.util.Map.of("*", "该法人仍被供应商档案引用，不能删除"));
         }
         registrations.findByLegalPersonIdOrderByValidFromAsc(id).forEach(registrations::delete);
         terms.findByLegalPersonIdOrderByValidFromAsc(id).forEach(terms::delete);

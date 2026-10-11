@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>供应商档案 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建供应商' : '编辑供应商'">供应商档案</h1>
+            <p class="lede">确认档案时，供货对象在公司、法人、自然人中恰好选一个。同一采购公司对同一供货对象只保留一份档案。公司供应商不能再以其对应法人另建一份。</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:if="${form.id != null}" th:href="@{/suppliers/{id}(id=${form.id})}">查看详情</a>
+            <a class="btn secondary" th:href="@{/suppliers}">返回列表</a>
+        </div>
+    </div>
+    <form class="panel" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/suppliers} : @{/suppliers/{id}(id=${form.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <p class="hint" th:if="${identityLocked}">该档案已被后续业务引用。采购公司和供货对象保持不变；签约主体变化时请新建档案，历史档案保留。</p>
+
+        <h2>档案身份</h2>
+        <div class="grid">
+            <label class="field">供应商编号
+                <input th:field="*{supplierCode}" placeholder="在采购公司内不重复">
+            </label>
+            <label class="field">显示名称
+                <input th:field="*{supplierName}">
+            </label>
+            <label class="field">采购公司
+                <select th:field="*{purchasingCompanyId}">
+                    <option value="">请选择</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">供货公司
+                <select th:field="*{companyId}">
+                    <option value="">不选</option>
+                    <option th:each="company : ${companies}" th:value="${company.id}"
+                            th:text="${company.companyCode + ' ' + company.name}"></option>
+                </select>
+            </label>
+            <label class="field">供货法人
+                <select th:field="*{legalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="legal : ${legalPersons}" th:value="${legal.id}" th:text="${legal.legalName}"></option>
+                </select>
+            </label>
+            <label class="field">供货自然人
+                <select th:field="*{personId}">
+                    <option value="">不选</option>
+                    <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                </select>
+            </label>
+            <label class="field">采购负责人
+                <select th:field="*{procurementOwnerEmployeeId}">
+                    <option value="">未指定</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+        </div>
+
+        <h2>准入</h2>
+        <p class="hint">审核中、通过和驳回都要有提交时间。通过时填写负责人和审核结果，驳回原因留空。驳回时填写原因、审核人和审核时间。</p>
+        <div class="grid">
+            <label class="field">准入状态
+                <select th:field="*{admissionStatus}">
+                    <option th:each="status : ${admissionStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">提交时间
+                <input type="datetime-local" th:field="*{admissionSubmittedAt}">
+            </label>
+            <label class="field">审核人
+                <select th:field="*{admissionReviewedByEmployeeId}">
+                    <option value="">未审核</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+            <label class="field">审核时间
+                <input type="datetime-local" th:field="*{admissionReviewedAt}">
+            </label>
+            <label class="field span-2">驳回原因
+                <input th:field="*{admissionRejectionReason}">
+            </label>
+            <label class="field">准入依据
+                <select th:replace="~{fragments/document-select :: bound('admissionDocumentId')}"></select>
+            </label>
+        </div>
+
+        <h2>合作</h2>
+        <p class="hint">合作中、暂停和终止填写开始日。终止再填写结束日。暂停、终止，以及从暂停恢复为合作中时，填写原因。初次进入合作中不必填写原因。</p>
+        <div class="grid">
+            <label class="field">合作状态
+                <select th:field="*{cooperationStatus}">
+                    <option th:each="status : ${cooperationStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="field">状态生效时间
+                <input type="datetime-local" th:field="*{cooperationStatusEffectiveAt}">
+            </label>
+            <label class="field">开始日
+                <input type="date" th:field="*{cooperationStartedOn}">
+            </label>
+            <label class="field">结束日
+                <input type="date" th:field="*{cooperationEndedOn}">
+            </label>
+            <label class="field span-2">状态原因
+                <input th:field="*{cooperationStatusReason}">
+            </label>
+        </div>
+
+        <h2>默认结算</h2>
+        <p class="hint">只作为以后拟订合同的初始值。发票确认日和验收日填写账期天数；约定固定日填写 1 到 31；合同另定或未选基准时两项都留空。币种可以单独填写。</p>
+        <div class="grid">
+            <label class="field">默认币种
+                <input th:field="*{defaultSettlementCurrency}" placeholder="CNY">
+            </label>
+            <label class="field">到期基准
+                <select th:field="*{defaultPaymentDueBasis}">
+                    <option value="">未指定</option>
+                    <option th:each="basis : ${paymentBases}" th:value="${basis}" th:text="${basis}"></option>
+                </select>
+            </label>
+            <label class="field">账期天数
+                <input type="number" min="0" th:field="*{defaultPaymentTermDays}">
+            </label>
+            <label class="field">每月固定日
+                <input type="number" min="1" max="31" th:field="*{defaultPaymentDayOfMonth}">
+            </label>
+        </div>
+
+        <h2>本次变更</h2>
+        <p class="hint">保存档案时写入版本。当天再次修改状态或条件会改写当前版本；生效日已早于今天时，另开一条新版本。联系人、供货类别和资质在详情页维护，不进入这条版本。</p>
+        <div class="grid">
+            <label class="field">变更人
+                <select th:field="*{changedByEmployeeId}">
+                    <option value="">未指定</option>
+                    <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                            th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                </select>
+            </label>
+            <label class="field span-2">变更原因
+                <input th:field="*{changeReason}">
+            </label>
+            <label class="field">变更依据
+                <select th:replace="~{fragments/document-select :: bound('basisDocumentId')}"></select>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存档案</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

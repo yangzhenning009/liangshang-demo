@@ -26,6 +26,7 @@ public class PersonService {
     private final CompanyRepository companies;
     private final CompanyRegistrationRepository companyRegistrations;
     private final CompanyShareholdingRepository shareholdings;
+    private final SupplierLinkGuard supplierLinks;
 
     public List<Person> list() {
         return persons.findAllByOrderByNameAsc();
@@ -76,6 +77,9 @@ public class PersonService {
         }
         if (!shareholdings.findByShareholderPersonId(id).isEmpty()) {
             throw new FieldErrorsException(java.util.Map.of("*", "该自然人仍是股东，不能删除"));
+        }
+        if (supplierLinks.personUsed(id)) {
+            throw new FieldErrorsException(java.util.Map.of("*", "该自然人仍被供应商档案引用，不能删除"));
         }
         persons.deleteById(id);
     }

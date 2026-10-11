@@ -31,6 +31,14 @@ public final class Codes {
     public static final String REPORTING_ADMIN = "行政";
     public static final List<String> REPORTING_TYPES = List.of(REPORTING_ADMIN, "职能");
     public static final List<String> DOCUMENT_STATUS = List.of("有效", "作废");
+    public static final List<String> ADMISSION_STATUS = List.of("待提交", "审核中", "通过", "驳回");
+    public static final List<String> COOPERATION_STATUS = List.of("未启用", "合作中", "暂停", "终止");
+    public static final List<String> PAYMENT_DUE_BASIS = List.of("发票确认日", "验收日", "约定固定日", "合同另定");
+    public static final List<String> CONTACT_ROLES = List.of("商务", "交付", "财务", "其他");
+    public static final List<String> CONTACT_STATUS = List.of("有效", "停用");
+    public static final List<String> SUPPLY_CATEGORY_STATUS = List.of("有效", "停用");
+    public static final List<String> QUALIFICATION_REVIEW_STATUS = List.of("待审核", "通过", "驳回");
+    public static final List<String> QUALIFICATION_STATUS = List.of("有效", "停用");
 
     private Codes() {
     }

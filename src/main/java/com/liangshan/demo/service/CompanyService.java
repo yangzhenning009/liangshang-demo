@@ -55,6 +55,7 @@ public class CompanyService {
     private final DepartmentServiceCompanyRepository serviceCompanies;
     private final IdentifierGuard identifiers;
     private final SourceDocumentService documents;
+    private final SupplierLinkGuard supplierLinks;
 
     public record CompanyRow(
             Long id,
@@ -166,6 +167,9 @@ public class CompanyService {
                 || !departmentVersions.findByCompanyId(id).isEmpty()
                 || !serviceCompanies.findByServiceCompanyId(id).isEmpty()) {
             throw new FieldErrorsException(Map.of("*", "该公司仍被部门引用，不能删除"));
+        }
+        if (supplierLinks.companyUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该公司仍被供应商档案引用，不能删除"));
         }
         registrations.findByCompanyIdOrderByVersionNumberAsc(id).forEach(registrations::delete);
         bankAccounts.findByCompanyIdOrderByIdAsc(id).forEach(bankAccounts::delete);

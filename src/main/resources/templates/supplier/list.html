@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>供应商 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>供应商</h1>
+            <p class="lede">一份档案对应一个采购公司或分公司，以及一个实际供货对象。公司、法人和自然人的基础资料仍在各自页面维护。</p>
+        </div>
+        <a class="btn" th:href="@{/suppliers/new}">新建供应商</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>显示名称</th>
+                    <th>采购公司</th>
+                    <th>供货对象</th>
+                    <th>准入</th>
+                    <th>合作</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="7" class="empty">还没有供应商。先确认采购公司和供货对象，再建立档案。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.supplierCode}">SP</td>
+                    <td th:text="${item.supplierName}">供货方</td>
+                    <td th:text="${item.purchasingCompany}">采购公司</td>
+                    <td th:text="${item.supplyingObject}">供货对象</td>
+                    <td><span class="badge" th:text="${item.admissionStatus}">待提交</span></td>
+                    <td><span class="badge" th:text="${item.cooperationStatus}">未启用</span></td>
+                    <td class="actions">
+                        <a th:href="@{/suppliers/{id}(id=${item.id})}">详情</a>
+                        <a th:href="@{/suppliers/{id}/edit(id=${item.id})}">编辑</a>
+                        <form class="inline" th:action="@{/suppliers/{id}/delete(id=${item.id})}" method="post"
+                              onsubmit="return confirm('删除该供应商及其联系人、供货类别、资质和版本？已被业务引用时会拒绝。');">
+                            <button class="danger small" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -7,7 +7,7 @@
 <main>
     <section class="hero">
         <h1>主数据工作台</h1>
-        <p class="lede">法人、公司、自然人、员工和部门各自有主键。公司与分公司都记在 company 上，用 company_type 区分：公司填写自己的法人，分公司填写总公司，子公司仍是公司类型，股权写在股东明细里。</p>
+        <p class="lede">法人、公司、自然人、员工和部门各自有主键。供应商按采购公司加实际供货对象单独建档。公司与分公司都记在 company 上，用 company_type 区分。</p>
     </section>
     <section class="cards">
         <a class="card" th:href="@{/legal-persons}">
@@ -40,6 +40,11 @@
             <strong th:text="${departmentCount}">0</strong>
             直接归属公司或分公司
         </a>
+        <a class="card" th:href="@{/suppliers}">
+            <em>供应商</em>
+            <strong th:text="${supplierCount}">0</strong>
+            准入、合作、联系人与资质
+        </a>
     </section>
     <section class="panel">
         <h2>这一版能做什么</h2>
@@ -48,9 +53,10 @@
             <li>法人可登记非公司证照和法定代表人任期。已经关联公司的法人，证照只在公司登记里维护。</li>
             <li>公司类型必须有法人且总公司留空；分公司必须指向一家公司类型的总公司，法人、公司形式和股东留空。</li>
             <li>员工详情里维护雇佣、部门任职和汇报线。用人对象在公司与法人中恰好选一个，任职和汇报期间必须落在对应有效期内。</li>
+            <li>供应商确认时，供货对象在公司、法人、自然人中恰好选一个。同一采购公司对同一对象只留一份档案。联系人、供货类别和资质在详情页维护，状态变化写入版本。</li>
             <li>未知号码留空，不写占位空串。信用代码、税号和注册号按主体去重，同一家公司的信用代码与税号可以相同。</li>
         </ul>
-        <p class="hint">供应商、项目、合同和财务对象还不在这一版。</p>
+        <p class="hint">项目、合同和财务对象还不在这一版。</p>
     </section>
 </main>
 </body>

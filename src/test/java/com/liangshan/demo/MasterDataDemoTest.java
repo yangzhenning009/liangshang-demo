@@ -3,11 +3,14 @@ package com.liangshan.demo;
 import com.liangshan.demo.domain.Company;
 import com.liangshan.demo.domain.CompanyRegistration;
 import com.liangshan.demo.domain.Person;
+import com.liangshan.demo.domain.SupplierVersion;
 import com.liangshan.demo.repository.CompanyRegistrationRepository;
 import com.liangshan.demo.repository.CompanyRepository;
 import com.liangshan.demo.repository.CompanyVersionRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.PersonRepository;
+import com.liangshan.demo.repository.SupplierRepository;
+import com.liangshan.demo.repository.SupplierVersionRepository;
 import com.liangshan.demo.service.CompanyService;
 import com.liangshan.demo.service.DepartmentService;
 import com.liangshan.demo.service.EmployeeOrgService;
@@ -16,6 +19,7 @@ import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
 import com.liangshan.demo.service.PersonService;
+import com.liangshan.demo.service.SupplierService;
 import com.liangshan.demo.web.form.CompanyForm;
 import com.liangshan.demo.web.form.DepartmentForm;
 import com.liangshan.demo.web.form.EmployeeForm;
@@ -24,11 +28,17 @@ import com.liangshan.demo.web.form.EmployeeOrgForm.AssignmentForm;
 import com.liangshan.demo.web.form.EmployeeOrgForm.EmploymentForm;
 import com.liangshan.demo.web.form.EmployeeOrgForm.ReportingForm;
 import com.liangshan.demo.web.form.SourceDocumentForm;
+import com.liangshan.demo.web.form.SupplierDetailForm;
+import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
+import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
+import com.liangshan.demo.web.form.SupplierForm;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.function.Executable;
 import com.liangshan.demo.web.form.LegalPersonForm;
 import com.liangshan.demo.web.form.PersonForm;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,8 +49,10 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -56,6 +68,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Import(SupplierUsageProbe.class)
 class MasterDataDemoTest {
 
     static {
@@ -96,6 +109,17 @@ class MasterDataDemoTest {
     private EmployeeOrgService organizations;
     @Autowired
     private SourceDocumentService sourceDocuments;
+    @Autowired
+    private SupplierService supplierService;
+    @Autowired
+    private SupplierRepository supplierRepository;
+    @Autowired
+    private SupplierVersionRepository supplierVersions;
+
+    @AfterEach
+    void clearSupplierReferences() {
+        SupplierUsageProbe.REFERENCED.clear();
+    }
 
     @Test
     void schemaUsesOnlyBasicConstraints() {
@@ -131,7 +155,23 @@ class MasterDataDemoTest {
                 "employee_employment",
                 "employee_department_assignment",
                 "employee_reporting_line",
-                "source_document")));
+                "source_document",
+                "supplier",
+                "supplier_contact",
+                "supplier_supply_category",
+                "supplier_qualification",
+                "supplier_version")));
+        Map<String, Object> supplierId = column("supplier_version", "id");
+        assertEquals("integer", String.valueOf(supplierId.get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(1, ((Number) column("supplier", "supplier_code").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("supplier", "purchasing_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("supplier", "company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("supplier", "legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("supplier", "person_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("supplier_contact", "person_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("supplier_qualification", "has_no_expiry").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("supplier_qualification", "qualification_document_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("supplier_qualification", "expires_on").get("notnull")).intValue());
     }
 
     @Test
@@ -140,7 +180,10 @@ class MasterDataDemoTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("梁山集团")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("法人")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("公司")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("公司")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("供应商")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("基础管理")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("采购")));
     }
 
     @Test
@@ -380,6 +423,187 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("页面法人")));
     }
 
+    @Test
+    void supplierRulesContactsQualificationsAndVersions() throws Exception {
+        long buyer = companyForOrg("WP04-BUY", "采购甲");
+        long otherBuyer = companyForOrg("WP04-BUY2", "采购乙");
+        long thirdBuyer = companyForOrg("WP04-BUY3", "采购丙");
+        long vendorLegalId = legalPersons.save(legalPerson("供货甲法人"));
+        CompanyForm vendorCompany = company("WP04-VEN", "供货甲公司", "company");
+        vendorCompany.setLegalPersonId(vendorLegalId);
+        vendorCompany.setCompanyForm("有限责任公司");
+        long vendorCompanyId = companies.save(vendorCompany);
+        long outsiderLegalId = legalPersons.save(legalPerson("外部供货法人"));
+        long personA = person("WP04吴用");
+        long personB = person("WP04公孙胜");
+        long personC = person("WP04阮小二");
+        long ownerId = employee("林冲", "WP04-E1");
+
+        SupplierForm missingObject = supplier("SP-NONE", "缺对象", buyer);
+        assertTrue(messageOf(() -> supplierService.save(missingObject)).contains("恰好选择一个"));
+        SupplierForm twoObjects = supplier("SP-TWO", "两个对象", buyer);
+        twoObjects.setCompanyId(vendorCompanyId);
+        twoObjects.setPersonId(personA);
+        assertTrue(messageOf(() -> supplierService.save(twoObjects)).contains("恰好选择一个"));
+
+        SupplierForm first = supplier("SP-A", "甲供档案", buyer);
+        first.setPersonId(personA);
+        long firstId = supplierService.save(first);
+        List<SupplierVersion> created = supplierVersions.findBySupplierIdOrderByVersionNumberAsc(firstId);
+        assertEquals(1, created.size());
+        assertEquals(1, created.get(0).versionNumber.intValue());
+        assertEquals("待提交", created.get(0).admissionStatus);
+        assertEquals(LocalDate.now(), created.get(0).validFrom);
+        assertNull(created.get(0).validTo);
+
+        SupplierForm duplicateCode = supplier("SP-A", "重复编号", buyer);
+        duplicateCode.setPersonId(personB);
+        assertTrue(messageOf(() -> supplierService.save(duplicateCode)).contains("编号"));
+        SupplierForm sameCodeOtherBuyer = supplier("SP-A", "乙公司同号", otherBuyer);
+        sameCodeOtherBuyer.setPersonId(personA);
+        supplierService.save(sameCodeOtherBuyer);
+        SupplierForm duplicateObject = supplier("SP-B", "重复对象", buyer);
+        duplicateObject.setPersonId(personA);
+        assertTrue(messageOf(() -> supplierService.save(duplicateObject)).contains("一份档案"));
+
+        SupplierForm companySupplier = supplier("SP-C", "公司供货", buyer);
+        companySupplier.setCompanyId(vendorCompanyId);
+        long companySupplierId = supplierService.save(companySupplier);
+        SupplierForm legalDuplicate = supplier("SP-D", "法人重复", buyer);
+        legalDuplicate.setLegalPersonId(vendorLegalId);
+        assertTrue(messageOf(() -> supplierService.save(legalDuplicate)).contains("对应法人"));
+        SupplierForm otherLegal = supplier("SP-E", "乙公司法人供货", otherBuyer);
+        otherLegal.setLegalPersonId(outsiderLegalId);
+        supplierService.save(otherLegal);
+
+        SupplierForm admitted = supplierService.form(firstId);
+        admitted.setAdmissionStatus("通过");
+        admitted.setAdmissionSubmittedAt(LocalDateTime.now());
+        assertTrue(messageOf(() -> supplierService.save(admitted)).contains("采购负责人"));
+        admitted.setProcurementOwnerEmployeeId(ownerId);
+        admitted.setAdmissionReviewedAt(LocalDateTime.now());
+        assertTrue(messageOf(() -> supplierService.save(admitted)).contains("审核人"));
+        admitted.setAdmissionReviewedByEmployeeId(ownerId);
+        supplierService.save(admitted);
+        assertEquals(1, supplierVersions.findBySupplierIdOrderByVersionNumberAsc(firstId).size());
+        assertEquals("通过", supplierRepository.findById(firstId).orElseThrow().admissionStatus);
+
+        SupplierForm rejected = supplierService.form(companySupplierId);
+        rejected.setAdmissionStatus("驳回");
+        rejected.setAdmissionSubmittedAt(LocalDateTime.now());
+        rejected.setAdmissionReviewedByEmployeeId(ownerId);
+        rejected.setAdmissionReviewedAt(LocalDateTime.now());
+        assertTrue(messageOf(() -> supplierService.save(rejected)).contains("驳回"));
+        rejected.setAdmissionRejectionReason("资料不全");
+        supplierService.save(rejected);
+
+        SupplierForm invoice = supplierService.form(firstId);
+        invoice.setDefaultPaymentDueBasis("发票确认日");
+        assertTrue(messageOf(() -> supplierService.save(invoice)).contains("账期"));
+        invoice.setDefaultPaymentTermDays(30);
+        supplierService.save(invoice);
+        SupplierForm fixedDay = supplierService.form(firstId);
+        fixedDay.setDefaultPaymentDueBasis("约定固定日");
+        fixedDay.setDefaultPaymentTermDays(null);
+        fixedDay.setDefaultPaymentDayOfMonth(0);
+        assertTrue(messageOf(() -> supplierService.save(fixedDay)).contains("1 到 31"));
+        fixedDay.setDefaultPaymentDayOfMonth(15);
+        supplierService.save(fixedDay);
+        SupplierForm contractual = supplierService.form(firstId);
+        contractual.setDefaultPaymentDueBasis("合同另定");
+        contractual.setDefaultPaymentDayOfMonth(null);
+        contractual.setDefaultPaymentTermDays(10);
+        assertTrue(messageOf(() -> supplierService.save(contractual)).contains("留空"));
+
+        SupplierForm cooperating = supplier("SP-F", "直接合作", buyer);
+        cooperating.setPersonId(personC);
+        cooperating.setCooperationStatus("合作中");
+        cooperating.setCooperationStartedOn(LocalDate.of(2024, 6, 1));
+        long cooperatingId = supplierService.save(cooperating);
+        assertNull(supplierRepository.findById(cooperatingId).orElseThrow().cooperationStatusReason);
+
+        SupplierDetailForm details = new SupplierDetailForm();
+        ContactForm bare = contact(personA, "商务", null, null, true);
+        details.getContacts().add(bare);
+        assertTrue(messageOf(() -> supplierService.saveDetails(firstId, details)).contains("电话或邮箱"));
+        bare.setBusinessPhone("13800001111");
+        ContactForm secondPrimary = contact(personB, "商务", "13900002222", null, true);
+        details.getContacts().add(secondPrimary);
+        assertTrue(messageOf(() -> supplierService.saveDetails(firstId, details)).contains("主联系人"));
+        secondPrimary.setContactRole("财务");
+        secondPrimary.setBusinessEmail("not-an-email");
+        assertTrue(messageOf(() -> supplierService.saveDetails(firstId, details)).contains("邮箱"));
+        secondPrimary.setBusinessEmail("finance@example.com");
+        supplierService.saveDetails(firstId, details);
+
+        SourceDocumentForm document = new SourceDocumentForm();
+        document.setDocumentType("资质证书");
+        document.setDocumentNumber("ZZ-WP04");
+        document.setStatus("有效");
+        long documentId = sourceDocuments.save(document);
+        SupplierDetailForm qualificationForm = supplierService.detailForm(firstId);
+        QualificationForm missingDocument = qualification("道路运输");
+        qualificationForm.getQualifications().add(missingDocument);
+        assertTrue(messageOf(() -> supplierService.saveDetails(firstId, qualificationForm)).contains("资质材料"));
+        missingDocument.setQualificationDocumentId(documentId);
+        missingDocument.setNoExpiry(true);
+        missingDocument.setExpiresOn(LocalDate.now().plusYears(1));
+        assertTrue(messageOf(() -> supplierService.saveDetails(firstId, qualificationForm)).contains("到期日必须留空"));
+        missingDocument.setNoExpiry(false);
+        missingDocument.setIssuedOn(LocalDate.of(2024, 1, 1));
+        missingDocument.setExpiresOn(LocalDate.of(2023, 1, 1));
+        assertTrue(messageOf(() -> supplierService.saveDetails(firstId, qualificationForm)).contains("早于"));
+        missingDocument.setExpiresOn(null);
+        supplierService.saveDetails(firstId, qualificationForm);
+        assertTrue(messageOf(() -> sourceDocuments.delete(documentId)).contains("仍被业务记录引用"));
+
+        SupplierVersion open = supplierVersions.findBySupplierIdOrderByVersionNumberAsc(firstId).stream()
+                .filter(version -> version.validTo == null)
+                .findFirst()
+                .orElseThrow();
+        open.validFrom = LocalDate.now().minusDays(1);
+        supplierVersions.save(open);
+        SupplierForm started = supplierService.form(firstId);
+        started.setCooperationStatus("合作中");
+        started.setCooperationStartedOn(LocalDate.of(2024, 1, 1));
+        started.setChangeReason("开始供货");
+        supplierService.save(started);
+        List<SupplierVersion> history = supplierVersions.findBySupplierIdOrderByVersionNumberAsc(firstId);
+        assertEquals(2, history.size());
+        assertEquals(LocalDate.now(), history.get(0).validTo);
+        assertEquals("合作中", history.get(1).cooperationStatus);
+        assertEquals("合作中", supplierRepository.findById(firstId).orElseThrow().cooperationStatus);
+        assertEquals(LocalDate.now(), history.get(1).validFrom);
+
+        SupplierForm paused = supplierService.form(firstId);
+        paused.setCooperationStatus("暂停");
+        assertTrue(messageOf(() -> supplierService.save(paused)).contains("原因"));
+
+        SupplierForm reassigned = supplierService.form(firstId);
+        reassigned.setPersonId(personB);
+        supplierService.save(reassigned);
+        SupplierUsageProbe.REFERENCED.add(firstId);
+        try {
+            SupplierForm locked = supplierService.form(firstId);
+            locked.setPurchasingCompanyId(thirdBuyer);
+            assertTrue(messageOf(() -> supplierService.save(locked)).contains("不能更换"));
+            assertTrue(messageOf(() -> supplierService.delete(firstId)).contains("不能删除"));
+        } finally {
+            SupplierUsageProbe.REFERENCED.clear();
+        }
+
+        mvc.perform(get("/suppliers"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("甲供档案")));
+        mvc.perform(get("/suppliers/" + firstId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("WP04吴用")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("道路运输")));
+        mvc.perform(get("/suppliers/" + firstId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("甲供档案")));
+    }
+
     private String messageOf(Executable executable) {
         return assertThrows(FieldErrorsException.class, executable).getMessage();
     }
@@ -445,6 +669,52 @@ class MasterDataDemoTest {
         row.setManagerAssignmentKey(managerKey);
         row.setReportingType(type);
         row.setValidFrom(LocalDate.of(2020, 1, 1));
+        return row;
+    }
+
+    private Map<String, Object> column(String table, String name) {
+        return jdbc.queryForList("pragma table_info('" + table + "')").stream()
+                .filter(row -> name.equalsIgnoreCase(String.valueOf(row.get("name"))))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private long person(String name) {
+        PersonForm form = new PersonForm();
+        form.setName(name);
+        form.setStatus("有效");
+        return persons.save(form);
+    }
+
+    private SupplierForm supplier(String code, String name, long purchasingCompanyId) {
+        SupplierForm form = new SupplierForm();
+        form.setSupplierCode(code);
+        form.setSupplierName(name);
+        form.setPurchasingCompanyId(purchasingCompanyId);
+        form.setAdmissionStatus("待提交");
+        form.setCooperationStatus("未启用");
+        form.setCooperationStatusEffectiveAt(LocalDateTime.now());
+        return form;
+    }
+
+    private ContactForm contact(long personId, String role, String phone, String email, boolean primary) {
+        ContactForm row = new ContactForm();
+        row.setPersonId(personId);
+        row.setContactRole(role);
+        row.setBusinessPhone(phone);
+        row.setBusinessEmail(email);
+        row.setPrimary(primary);
+        row.setValidFrom(LocalDate.of(2024, 1, 1));
+        row.setStatus("有效");
+        return row;
+    }
+
+    private QualificationForm qualification(String name) {
+        QualificationForm row = new QualificationForm();
+        row.setQualificationName(name);
+        row.setNoExpiry(false);
+        row.setReviewStatus("待审核");
+        row.setStatus("有效");
         return row;
     }
 

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>供应商详情 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${header.supplierCode + ' ' + header.supplierName}">供应商详情</h1>
+            <p class="lede" th:text="${header.purchasingCompany + ' · ' + header.supplyingObject}">采购公司与供货对象</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:href="@{/suppliers/{id}/edit(id=${header.id})}">编辑档案</a>
+            <a class="btn secondary" th:href="@{/suppliers}">返回列表</a>
+        </div>
+    </div>
+    <section class="panel">
+        <h2>当前状态</h2>
+        <p>
+            <span class="badge" th:text="'准入 ' + ${header.admissionStatus}">准入</span>
+            <span class="badge" th:text="'合作 ' + ${header.cooperationStatus}">合作</span>
+            <span class="badge" th:if="${header.referenced}">已被业务引用</span>
+        </p>
+        <p class="hint">有效联系人至少填写电话或邮箱。同一角色在重叠期间只能有一个有效的主联系人。资质标明长期有效时到期日留空；到期日未知时不要标成长期有效，把到期日留空即可。</p>
+    </section>
+
+    <form class="panel" th:object="${form}" method="post" th:action="@{/suppliers/{id}/details(id=${header.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+
+        <h2>联系人</h2>
+        <div id="contact-rows">
+            <div class="repeat-row" th:each="row, stat : *{contacts}">
+                <div class="row-tools">
+                    <strong>联系人</strong>
+                    <label class="check"><input type="checkbox" th:field="*{contacts[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{contacts[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">自然人
+                        <select th:field="*{contacts[__${stat.index}__].personId}">
+                            <option value="">请选择</option>
+                            <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                        </select>
+                    </label>
+                    <label class="field">角色
+                        <select th:field="*{contacts[__${stat.index}__].contactRole}">
+                            <option th:each="role : ${contactRoles}" th:value="${role}" th:text="${role}"></option>
+                        </select>
+                    </label>
+                    <label class="field">电话
+                        <input th:field="*{contacts[__${stat.index}__].businessPhone}">
+                    </label>
+                    <label class="field">邮箱
+                        <input th:field="*{contacts[__${stat.index}__].businessEmail}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{contacts[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{contacts[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{contacts[__${stat.index}__].status}">
+                            <option th:each="status : ${contactStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="check">
+                        <input type="checkbox" th:field="*{contacts[__${stat.index}__].primary}"> 主联系人
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{contacts.isEmpty()}">还没有联系人。</p>
+        <button class="secondary" type="button" onclick="addRow('contact-rows','contact-template')">增加联系人</button>
+
+        <h2>供货类别</h2>
+        <p class="hint">同一档案可以有多项类别，期间允许重叠。</p>
+        <div id="category-rows">
+            <div class="repeat-row" th:each="row, stat : *{categories}">
+                <div class="row-tools">
+                    <strong>类别</strong>
+                    <label class="check"><input type="checkbox" th:field="*{categories[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{categories[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">类别编号
+                        <input th:field="*{categories[__${stat.index}__].supplyCategoryCode}">
+                    </label>
+                    <label class="field">类别名称
+                        <input th:field="*{categories[__${stat.index}__].supplyCategoryName}">
+                    </label>
+                    <label class="field span-2">供货范围
+                        <input th:field="*{categories[__${stat.index}__].supplyScopeDescription}">
+                    </label>
+                    <label class="field">开始
+                        <input type="date" th:field="*{categories[__${stat.index}__].validFrom}">
+                    </label>
+                    <label class="field">结束
+                        <input type="date" th:field="*{categories[__${stat.index}__].validTo}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{categories[__${stat.index}__].status}">
+                            <option th:each="status : ${categoryStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{categories.isEmpty()}">还没有供货类别。</p>
+        <button class="secondary" type="button" onclick="addRow('category-rows','category-template')">增加类别</button>
+
+        <h2>资质</h2>
+        <div id="qualification-rows">
+            <div class="repeat-row" th:each="row, stat : *{qualifications}">
+                <div class="row-tools">
+                    <strong>资质</strong>
+                    <label class="check"><input type="checkbox" th:field="*{qualifications[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{qualifications[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">名称
+                        <input th:field="*{qualifications[__${stat.index}__].qualificationName}">
+                    </label>
+                    <label class="field">证书编号
+                        <input th:field="*{qualifications[__${stat.index}__].certificateNumber}">
+                    </label>
+                    <label class="field">发证机关
+                        <input th:field="*{qualifications[__${stat.index}__].issuingAuthority}">
+                    </label>
+                    <label class="field">发证日
+                        <input type="date" th:field="*{qualifications[__${stat.index}__].issuedOn}">
+                    </label>
+                    <label class="field">到期日
+                        <input type="date" th:field="*{qualifications[__${stat.index}__].expiresOn}">
+                    </label>
+                    <label class="field">有效期
+                        <select th:field="*{qualifications[__${stat.index}__].noExpiry}">
+                            <option value="false">到期日已知或尚未掌握</option>
+                            <option value="true">长期有效</option>
+                        </select>
+                    </label>
+                    <label class="field">资质材料
+                        <select th:replace="~{fragments/document-select :: bound('qualifications[__${stat.index}__].qualificationDocumentId')}"></select>
+                    </label>
+                    <label class="field">审核
+                        <select th:field="*{qualifications[__${stat.index}__].reviewStatus}">
+                            <option th:each="status : ${reviewStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                    <label class="field">审核人
+                        <select th:field="*{qualifications[__${stat.index}__].reviewedByEmployeeId}">
+                            <option value="">未审核</option>
+                            <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                    th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                        </select>
+                    </label>
+                    <label class="field">审核时间
+                        <input type="datetime-local" th:field="*{qualifications[__${stat.index}__].reviewedAt}">
+                    </label>
+                    <label class="field">驳回原因
+                        <input th:field="*{qualifications[__${stat.index}__].rejectionReason}">
+                    </label>
+                    <label class="field">状态
+                        <select th:field="*{qualifications[__${stat.index}__].status}">
+                            <option th:each="status : ${qualificationStatuses}" th:value="${status}" th:text="${status}"></option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="empty" th:if="*{qualifications.isEmpty()}">还没有资质。营业执照和税号仍在公司登记里维护。</p>
+        <button class="secondary" type="button" onclick="addRow('qualification-rows','qualification-template')">增加资质</button>
+
+        <div class="form-actions">
+            <button type="submit">保存明细</button>
+        </div>
+    </form>
+
+    <section class="panel">
+        <h2>版本</h2>
+        <p class="hint">初始建档即有版本。状态和结算条件的变化在保存档案时写入，详情页只读。</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>版本</th>
+                    <th>名称</th>
+                    <th>准入</th>
+                    <th>合作</th>
+                    <th>生效</th>
+                    <th>结束</th>
+                    <th>原因</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${versions.isEmpty()}">
+                    <td colspan="7" class="empty">还没有版本。</td>
+                </tr>
+                <tr th:each="version : ${versions}">
+                    <td th:text="${version.versionNumber}">1</td>
+                    <td th:text="${version.supplierName}">名称</td>
+                    <td th:text="${version.admissionStatus}">待提交</td>
+                    <td th:text="${version.cooperationStatus}">未启用</td>
+                    <td th:text="${version.validFrom}">2026-01-01</td>
+                    <td th:text="${version.validTo == null} ? '当前' : ${version.validTo}">当前</td>
+                    <td th:text="${@labels.dash(version.changeReason)}">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div id="contact-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>联系人</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="contacts[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">自然人
+                    <select name="contacts[__INDEX__].personId">
+                        <option value="">请选择</option>
+                        <option th:each="person : ${persons}" th:value="${person.id}" th:text="${person.name}"></option>
+                    </select>
+                </label>
+                <label class="field">角色
+                    <select name="contacts[__INDEX__].contactRole">
+                        <option th:each="role : ${contactRoles}" th:value="${role}" th:text="${role}"></option>
+                    </select>
+                </label>
+                <label class="field">电话
+                    <input name="contacts[__INDEX__].businessPhone">
+                </label>
+                <label class="field">邮箱
+                    <input name="contacts[__INDEX__].businessEmail">
+                </label>
+                <label class="field">开始
+                    <input type="date" name="contacts[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="contacts[__INDEX__].validTo">
+                </label>
+                <label class="field">状态
+                    <select name="contacts[__INDEX__].status">
+                        <option th:each="status : ${contactStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="check">
+                    <input type="checkbox" name="contacts[__INDEX__].primary" value="true"> 主联系人
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="category-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>类别</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="categories[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">类别编号
+                    <input name="categories[__INDEX__].supplyCategoryCode">
+                </label>
+                <label class="field">类别名称
+                    <input name="categories[__INDEX__].supplyCategoryName">
+                </label>
+                <label class="field span-2">供货范围
+                    <input name="categories[__INDEX__].supplyScopeDescription">
+                </label>
+                <label class="field">开始
+                    <input type="date" name="categories[__INDEX__].validFrom">
+                </label>
+                <label class="field">结束
+                    <input type="date" name="categories[__INDEX__].validTo">
+                </label>
+                <label class="field">状态
+                    <select name="categories[__INDEX__].status">
+                        <option th:each="status : ${categoryStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="qualification-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>资质</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="qualifications[__INDEX__].id" value="">
+            <div class="grid">
+                <label class="field">名称
+                    <input name="qualifications[__INDEX__].qualificationName">
+                </label>
+                <label class="field">证书编号
+                    <input name="qualifications[__INDEX__].certificateNumber">
+                </label>
+                <label class="field">发证机关
+                    <input name="qualifications[__INDEX__].issuingAuthority">
+                </label>
+                <label class="field">发证日
+                    <input type="date" name="qualifications[__INDEX__].issuedOn">
+                </label>
+                <label class="field">到期日
+                    <input type="date" name="qualifications[__INDEX__].expiresOn">
+                </label>
+                <label class="field">有效期
+                    <select name="qualifications[__INDEX__].noExpiry">
+                        <option value="false">到期日已知或尚未掌握</option>
+                        <option value="true">长期有效</option>
+                    </select>
+                </label>
+                <label class="field">资质材料
+                    <select th:replace="~{fragments/document-select :: named('qualifications[IDX].qualificationDocumentId')}"></select>
+                </label>
+                <label class="field">审核
+                    <select name="qualifications[__INDEX__].reviewStatus">
+                        <option th:each="status : ${reviewStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+                <label class="field">审核人
+                    <select name="qualifications[__INDEX__].reviewedByEmployeeId">
+                        <option value="">未审核</option>
+                        <option th:each="employee : ${employeeRows}" th:value="${employee.id}"
+                                th:text="${employee.employeeCode + ' ' + employee.personName}"></option>
+                    </select>
+                </label>
+                <label class="field">审核时间
+                    <input type="datetime-local" name="qualifications[__INDEX__].reviewedAt">
+                </label>
+                <label class="field">驳回原因
+                    <input name="qualifications[__INDEX__].rejectionReason">
+                </label>
+                <label class="field">状态
+                    <select name="qualifications[__INDEX__].status">
+                        <option th:each="status : ${qualificationStatuses}" th:value="${status}" th:text="${status}"></option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
