@@ -58,7 +58,9 @@ import com.liangshan.demo.domain.Supplier;
 import com.liangshan.demo.domain.JournalEntry;
 import com.liangshan.demo.domain.JournalLine;
 import com.liangshan.demo.domain.JournalLineSource;
+import com.liangshan.demo.domain.AcceptanceLine;
 import com.liangshan.demo.domain.PayableItem;
+import com.liangshan.demo.domain.Payment;
 import com.liangshan.demo.domain.ReceivableItem;
 import com.liangshan.demo.repository.CostAllocationRepository;
 import com.liangshan.demo.repository.CostOccurrenceRepository;
@@ -71,6 +73,7 @@ import com.liangshan.demo.repository.JournalEntryRepository;
 import com.liangshan.demo.repository.JournalLineRepository;
 import com.liangshan.demo.repository.JournalLineSourceRepository;
 import com.liangshan.demo.repository.PayableItemRepository;
+import com.liangshan.demo.repository.PaymentRepository;
 import com.liangshan.demo.repository.ReceivableItemRepository;
 import com.liangshan.demo.repository.PaymentAllocationRepository;
 import com.liangshan.demo.repository.LaborCostRateRepository;
@@ -288,6 +291,8 @@ class MasterDataDemoTest {
     private ExpenseClaimService expenseClaims;
     @Autowired
     private PayableItemRepository payables;
+    @Autowired
+    private PaymentRepository paymentRepository;
     @Autowired
     private PaymentAllocationRepository paymentAllocations;
     @Autowired
@@ -2227,6 +2232,103 @@ class MasterDataDemoTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("wp13")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("项目与采购")));
+    }
+
+    @Test
+    void operationsFinanceSeedMonthEndIsNonZero() throws Exception {
+        seedRunner.run();
+        assertOperationsMonth(2024, 4);
+        assertOperationsMonth(2024, 5);
+        assertPartialAcceptance();
+        WorkLog rejected = workLogRepository.findAll().stream()
+                .filter(log -> log.workDescription != null && log.workDescription.startsWith("WP14-REJ|"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("驳回", rejected.approvalStatus);
+        assertEquals("工时说明与当日任务不符", rejected.approvalComment);
+        assertTrue(costRepository.findByWorkLogIdOrderByIdAsc(rejected.id).isEmpty());
+        Payment refund = paymentRepository.findByPaymentNumber("PAY-W14-TK-REF").get(0);
+        assertEquals("退款", refund.paymentKind);
+        assertNotNull(refund.refundOfPaymentId);
+        Payment third = paymentRepository.findByPaymentNumber("PAY-W14-TK-3RD").get(0);
+        assertEquals(companyRepository.findByCompanyCode("WP13-TK").get(0).id, third.paymentForCompanyId);
+        assertNotNull(third.agencyBasisDocumentId);
+        assertTrue(journalEntries.findAll().stream().anyMatch(entry -> entry.reversalOfEntryId != null
+                && "已过账".equals(entry.status)));
+        Map<String, Long> once = financeTableCounts();
+        seedRunner.run();
+        assertEquals(once, financeTableCounts());
+        assertOperationsMonth(2024, 4);
+        mvc.perform(get("/seed"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("wp14")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("经营与财务")));
+    }
+
+    private void assertOperationsMonth(int year, int month) {
+        List<MonthEndService.SummaryRow> rows = monthEnd.summarize(year, month);
+        MonthEndService.SummaryRow group = row(rows, "集团");
+        MonthEndService.SummaryRow headquarters = row(rows, "总部本级");
+        List<String> branches = List.of("梁山集团济州分公司", "梁山集团大名分公司", "梁山集团北京分公司", "梁山集团江州分公司");
+        BigDecimal revenue = headquarters.revenue();
+        BigDecimal cost = headquarters.cost();
+        BigDecimal receivables = headquarters.receivables();
+        BigDecimal payables = headquarters.payables();
+        assertPositive(headquarters);
+        for (String label : branches) {
+            MonthEndService.SummaryRow branch = row(rows, label);
+            assertPositive(branch);
+            revenue = revenue.add(branch.revenue());
+            cost = cost.add(branch.cost());
+            receivables = receivables.add(branch.receivables());
+            payables = payables.add(branch.payables());
+        }
+        assertPositive(group);
+        assertEquals(0, group.revenue().compareTo(revenue));
+        assertEquals(0, group.cost().compareTo(cost));
+        assertEquals(0, group.receivables().compareTo(receivables));
+        assertEquals(0, group.payables().compareTo(payables));
+    }
+
+    private static void assertPositive(MonthEndService.SummaryRow row) {
+        assertTrue(row.revenue().signum() > 0, row.label());
+        assertTrue(row.cost().signum() > 0, row.label());
+        assertTrue(row.receivables().signum() > 0, row.label());
+        assertTrue(row.payables().signum() > 0, row.label());
+    }
+
+    private static MonthEndService.SummaryRow row(List<MonthEndService.SummaryRow> rows, String label) {
+        return rows.stream().filter(row -> label.equals(row.label())).findFirst().orElseThrow();
+    }
+
+    private void assertPartialAcceptance() {
+        AcceptanceEvent first = acceptanceEvents.findAll().stream()
+                .filter(event -> "AC-W14-TK-1".equals(event.acceptanceNumber)).findFirst().orElseThrow();
+        AcceptanceEvent second = acceptanceEvents.findAll().stream()
+                .filter(event -> "AC-W14-TK-2".equals(event.acceptanceNumber)).findFirst().orElseThrow();
+        AcceptanceLine firstLine = acceptanceLines.findByAcceptanceEventIdOrderByIdAsc(first.id).get(0);
+        AcceptanceLine secondLine = acceptanceLines.findByAcceptanceEventIdOrderByIdAsc(second.id).get(0);
+        assertEquals(0, new BigDecimal("12").compareTo(firstLine.acceptedQuantity));
+        assertEquals(0, new BigDecimal("8").compareTo(firstLine.rejectedQuantity));
+        assertEquals("甲仗尺寸不符", firstLine.rejectionReason);
+        assertEquals(0, new BigDecimal("8").compareTo(secondLine.acceptedQuantity));
+        assertEquals(0, BigDecimal.ZERO.compareTo(secondLine.rejectedQuantity));
+        assertEquals(first.deliveryEventId, second.deliveryEventId);
+    }
+
+    private Map<String, Long> financeTableCounts() {
+        List<String> tables = List.of(
+                "work_log", "labor_cost_rate", "cost_occurrence", "cost_allocation",
+                "expense_claim", "expense_claim_line", "delivery_event", "delivery_line",
+                "acceptance_event", "acceptance_line", "invoice", "invoice_line", "invoice_line_allocation",
+                "receivable_item", "payable_item", "payment", "payment_allocation",
+                "ledger", "accounting_account", "accounting_period", "journal_entry", "journal_line",
+                "journal_line_source", "revenue_recognition", "source_document");
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (String table : tables) {
+            counts.put(table, jdbc.queryForObject("select count(*) from " + table, Long.class));
+        }
+        return counts;
     }
 
     private void assertProcurementSeed() {
