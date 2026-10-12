@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>种子数据 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>种子数据</h1>
+            <p class="lede">从空库经应用层服务写入组织与人事。登记、账户、雇佣和汇报都走原有校验。重复执行不会另建已有编号。</p>
+        </div>
+    </div>
+    <section class="panel">
+        <p>梁山员工编号（LS-E-）现有 <strong th:text="${heroCount}">0</strong> 人。座次为天罡三十六星与地煞七十二星，自宋江至段景住。</p>
+        <ul class="rules">
+            <li th:each="stage : ${stages}" th:text="${stage.label} + '（' + stage.code + '）'">组织与人事（wp12）</li>
+        </ul>
+        <p class="hint">启动参数 --seed，或配置 liangshan.seed=true，与此按钮相同。后续阶段按序号接在现有阶段之后。</p>
+        <form method="post" th:action="@{/seed}">
+            <div class="form-actions">
+                <button type="submit">载入种子数据</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

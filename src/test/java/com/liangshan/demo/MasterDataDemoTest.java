@@ -2,15 +2,31 @@ package com.liangshan.demo;
 
 import com.liangshan.demo.domain.Company;
 import com.liangshan.demo.domain.CompanyRegistration;
+import com.liangshan.demo.domain.Department;
+import com.liangshan.demo.domain.Employee;
+import com.liangshan.demo.domain.EmployeeDepartmentAssignment;
+import com.liangshan.demo.domain.EmployeeEmployment;
+import com.liangshan.demo.domain.EmployeeReportingLine;
+import com.liangshan.demo.domain.LegalPerson;
 import com.liangshan.demo.domain.Person;
 import com.liangshan.demo.domain.SupplierVersion;
+import com.liangshan.demo.repository.CompanyBankAccountRepository;
 import com.liangshan.demo.repository.CompanyRegistrationRepository;
 import com.liangshan.demo.repository.CompanyRepository;
 import com.liangshan.demo.repository.CompanyVersionRepository;
+import com.liangshan.demo.repository.DepartmentRepository;
+import com.liangshan.demo.repository.EmployeeDepartmentAssignmentRepository;
+import com.liangshan.demo.repository.EmployeeEmploymentRepository;
+import com.liangshan.demo.repository.EmployeeReportingLineRepository;
+import com.liangshan.demo.repository.LegalPersonRegistrationRepository;
+import com.liangshan.demo.repository.LegalPersonRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.PersonRepository;
 import com.liangshan.demo.repository.SupplierRepository;
 import com.liangshan.demo.repository.SupplierVersionRepository;
+import com.liangshan.demo.domain.Codes;
+import com.liangshan.demo.seed.LiangshanRoster;
+import com.liangshan.demo.seed.SeedRunner;
 import com.liangshan.demo.service.CompanyService;
 import com.liangshan.demo.service.DepartmentService;
 import com.liangshan.demo.service.EmployeeOrgService;
@@ -129,17 +145,23 @@ import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -150,6 +172,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -281,6 +304,22 @@ class MasterDataDemoTest {
     private JournalLineRepository journalLines;
     @Autowired
     private JournalLineSourceRepository journalSources;
+    @Autowired
+    private SeedRunner seedRunner;
+    @Autowired
+    private DepartmentRepository departmentRepository;
+    @Autowired
+    private CompanyBankAccountRepository bankAccounts;
+    @Autowired
+    private EmployeeEmploymentRepository employmentRepository;
+    @Autowired
+    private EmployeeDepartmentAssignmentRepository assignmentRepository;
+    @Autowired
+    private EmployeeReportingLineRepository reportingLineRepository;
+    @Autowired
+    private LegalPersonRepository legalPersonRepository;
+    @Autowired
+    private LegalPersonRegistrationRepository legalPersonRegistrations;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -2112,6 +2151,146 @@ class MasterDataDemoTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("已审批")));
         mvc.perform(get("/revenue-recognitions/new")).andExpect(status().isOk());
+    }
+
+    @Test
+    void orgSeedIsIdempotent() throws Exception {
+        assertEquals(108, LiangshanRoster.NAMES.size());
+        assertEquals("宋江", LiangshanRoster.name(1));
+        assertEquals("燕青", LiangshanRoster.name(36));
+        assertEquals("彭玘", LiangshanRoster.name(43));
+        assertEquals("单廷珪", LiangshanRoster.name(44));
+        assertEquals("蒋敬", LiangshanRoster.name(53));
+        assertEquals("施恩", LiangshanRoster.name(85));
+        assertEquals("段景住", LiangshanRoster.name(108));
+        assertTrue(employeeRepository.findByEmployeeCode("LS-E-001").isEmpty());
+        assertTrue(employeeRepository.findByEmployeeCode("LS-E-108").isEmpty());
+
+        seedRunner.run();
+        assertSeededOrg();
+        Map<String, Long> once = seedTableCounts();
+
+        MvcResult posted = mvc.perform(post("/seed"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/seed"))
+                .andReturn();
+        assertEquals(once, seedTableCounts());
+        MockHttpSession session = (MockHttpSession) posted.getRequest().getSession(false);
+        assertNotNull(session);
+        mvc.perform(get("/seed").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("种子已载入")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("wp12")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("组织与人事")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("108")));
+        seedRunner.run();
+        assertEquals(once, seedTableCounts());
+        assertSeededOrg();
+    }
+
+    private void assertSeededOrg() {
+        Company group = companyRepository.findByCompanyCode("LS-GROUP").get(0);
+        assertEquals(Codes.COMPANY, group.companyType);
+        assertEquals("有限责任公司", group.companyForm);
+        assertNull(group.headCompanyId);
+        assertNotNull(group.legalPersonId);
+        LegalPerson legalPerson = legalPersonRepository.findById(group.legalPersonId).orElseThrow();
+        assertEquals("梁山集团有限公司", legalPerson.legalName);
+        assertTrue(legalPersonRegistrations.findByLegalPersonIdOrderByValidFromAsc(legalPerson.id).isEmpty());
+        assertEquals(1, registrationRepository.findByCompanyIdOrderByVersionNumberAsc(group.id).size());
+        assertEquals(2, bankAccounts.findByCompanyIdOrderByIdAsc(group.id).size());
+
+        List<String> branchCodes = List.of("LS-JZ", "LS-DM", "LS-BJ", "LS-JS");
+        Map<String, Integer> branchManagers = Map.of("LS-JZ", 5, "LS-DM", 6, "LS-BJ", 7, "LS-JS", 8);
+        for (String code : branchCodes) {
+            Company branch = companyRepository.findByCompanyCode(code).get(0);
+            assertEquals(Codes.BRANCH, branch.companyType);
+            assertNull(branch.legalPersonId);
+            assertNull(branch.companyForm);
+            assertEquals(group.id, branch.headCompanyId);
+            assertEquals(1, registrationRepository.findByCompanyIdOrderByVersionNumberAsc(branch.id).size());
+            assertEquals(1, bankAccounts.findByCompanyIdOrderByIdAsc(branch.id).size());
+            Employee manager = employeeRepository.findByEmployeeCode(LiangshanRoster.employeeCode(branchManagers.get(code))).get(0);
+            assertEquals(manager.personId, branch.branchManagerPersonId);
+        }
+
+        List<String> companyCodes = List.of("LS-GROUP", "LS-JZ", "LS-DM", "LS-BJ", "LS-JS");
+        List<Department> seedDepartments = departmentRepository.findAll().stream()
+                .filter(department -> companyCodes.contains(companyCode(department.companyId)))
+                .toList();
+        assertEquals(17, seedDepartments.size());
+        for (Department department : seedDepartments) {
+            assertNotNull(department.departmentHeadEmployeeId);
+        }
+
+        Map<Long, Long> assignmentEmployee = new HashMap<>();
+        Map<Long, Long> adminManager = new HashMap<>();
+        for (int seat = 1; seat <= 108; seat++) {
+            Employee employee = employeeRepository.findByEmployeeCode(LiangshanRoster.employeeCode(seat)).get(0);
+            Person person = personRepository.findById(employee.personId).orElseThrow();
+            assertEquals(LiangshanRoster.name(seat), person.name);
+            List<EmployeeEmployment> hires = employmentRepository.findByEmployeeIdOrderByIdAsc(employee.id);
+            List<EmployeeDepartmentAssignment> posts = assignmentRepository.findByEmployeeIdOrderByIdAsc(employee.id);
+            assertEquals(1, hires.size());
+            assertEquals(1, posts.size());
+            assertEquals(employee.employeeCode, hires.get(0).employeeNumber);
+            assertNotNull(hires.get(0).employerCompanyId);
+            assertNull(hires.get(0).employerLegalPersonId);
+            Department department = departmentRepository.findById(posts.get(0).departmentId).orElseThrow();
+            assertEquals(hires.get(0).employerCompanyId, department.companyId);
+            assignmentEmployee.put(posts.get(0).id, employee.id);
+            List<EmployeeReportingLine> lines = reportingLineRepository.findByEmployeeIdOrderByIdAsc(employee.id).stream()
+                    .filter(line -> Codes.REPORTING_ADMIN.equals(line.reportingType))
+                    .toList();
+            if (seat == 1) {
+                assertEquals("集团首席执行官", posts.get(0).positionTitle);
+                assertTrue(lines.isEmpty());
+            } else {
+                assertEquals(1, lines.size());
+                adminManager.put(employee.id, lines.get(0).managerAssignmentId);
+            }
+        }
+        assertEquals("集团人事总监", assignmentRepository.findByEmployeeIdOrderByIdAsc(
+                employeeRepository.findByEmployeeCode("LS-E-003").get(0).id).get(0).positionTitle);
+        assertEquals("信息技术经理", assignmentRepository.findByEmployeeIdOrderByIdAsc(
+                employeeRepository.findByEmployeeCode("LS-E-053").get(0).id).get(0).positionTitle);
+        assertEquals("分公司经理", assignmentRepository.findByEmployeeIdOrderByIdAsc(
+                employeeRepository.findByEmployeeCode("LS-E-005").get(0).id).get(0).positionTitle);
+
+        long ceoId = employeeRepository.findByEmployeeCode("LS-E-001").get(0).id;
+        for (int seat = 2; seat <= 108; seat++) {
+            long cursor = employeeRepository.findByEmployeeCode(LiangshanRoster.employeeCode(seat)).get(0).id;
+            Set<Long> seen = new HashSet<>();
+            boolean reached = false;
+            while (seen.add(cursor)) {
+                Long managerAssignment = adminManager.get(cursor);
+                assertNotNull(managerAssignment);
+                cursor = assignmentEmployee.get(managerAssignment);
+                assertNotNull(cursor);
+                if (cursor == ceoId) {
+                    reached = true;
+                    break;
+                }
+            }
+            assertTrue(reached);
+        }
+    }
+
+    private String companyCode(Long companyId) {
+        return companyRepository.findById(companyId).orElseThrow().companyCode;
+    }
+
+    private Map<String, Long> seedTableCounts() {
+        List<String> tables = List.of(
+                "company", "company_registration", "company_bank_account", "company_version",
+                "legal_person", "legal_person_registration", "person", "employee",
+                "department", "department_version", "employee_employment",
+                "employee_department_assignment", "employee_reporting_line");
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (String table : tables) {
+            counts.put(table, jdbc.queryForObject("select count(*) from " + table, Long.class));
+        }
+        return counts;
     }
 
     private LedgerForm ledger(long legalPersonId, long companyId, String code, String name) {
