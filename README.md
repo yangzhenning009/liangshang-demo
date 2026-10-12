@@ -55,7 +55,7 @@ java -jar target/liangshan-demo-0.1.0.jar
 
 ## 数据库
 
-`src/main/resources/application.yml` 使用 `spring.jpa.hibernate.ddl-auto=update`。重启后 `./data/liangshan.db` 会保留。SQLite 对改表的支持有限；实体字段有破坏性变化时，先停掉应用，删除 `./data/liangshan.db`，再启动，让 Hibernate 按当前实体重建。
+`src/main/resources/application.yml` 使用 `spring.jpa.hibernate.ddl-auto=update`。重启后 `./data/liangshan.db` 会保留。元数据按表单独读取，避免 SQLite 在表变多后拒绝 Hibernate 的合并查询。SQLite 对改表的支持有限；实体字段有破坏性变化时，先停掉应用，删除 `./data/liangshan.db`，再启动，让 Hibernate 按当前实体重建。
 
 测试使用另一份库 `target/test-liangshan.db`，并用 `ddl-auto=create`。
 

@@ -24,6 +24,9 @@ spring:
         # can put version_number (integer) before id, leaving id untyped so
         # inserts do not return a rowid. Legacy order declares id first.
         column_ordering_strategy: legacy
+        # Grouped metadata extraction builds one compound SELECT per column.
+        # SQLite rejects that once the schema passes its compound-select limit.
+        hbm2ddl.jdbc_metadata_extraction_strategy: individually
   thymeleaf:
     cache: false
   web:
