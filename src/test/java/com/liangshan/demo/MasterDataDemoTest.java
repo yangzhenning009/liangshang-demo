@@ -647,14 +647,14 @@ class MasterDataDemoTest {
 
         EmployeeForm employee = new EmployeeForm();
         employee.setPersonId(personId);
-        employee.setEmployeeCode("LS-E-001");
+        employee.setEmployeeCode("EMP-1TO1");
         employee.setStatus("有效");
         long employeeId = employees.save(employee);
         assertEquals(personId, employeeRepository.findById(employeeId).orElseThrow().personId);
 
         EmployeeForm again = new EmployeeForm();
         again.setPersonId(personId);
-        again.setEmployeeCode("LS-E-002");
+        again.setEmployeeCode("EMP-1TO1-B");
         again.setStatus("有效");
         assertThrows(FieldErrorsException.class, () -> employees.save(again));
 
