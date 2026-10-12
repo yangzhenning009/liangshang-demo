@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>会计期间 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建期间' : '编辑期间'">编辑期间</h1>
+            <p class="lede">起止日都包含在内。同一账簿的期间不能重叠。关闭请回到列表，不要在这里改状态。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/accounting-periods}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="${form.id == null} ? @{/accounting-periods} : @{/accounting-periods/{id}(id=${form.id})}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">账簿
+                <select th:field="*{ledgerId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${ledgerChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">会计年度
+                <input type="number" th:field="*{fiscalYear}" required>
+            </label>
+            <label class="field">期间序号
+                <input type="number" min="1" th:field="*{periodNumber}" required>
+            </label>
+            <label class="field">开始日
+                <input type="date" th:field="*{periodStartDate}" required>
+            </label>
+            <label class="field">结束日
+                <input type="date" th:field="*{periodEndDate}" required>
+            </label>
+        </div>
+        <p class="hint" th:if="${form.periodStatus != null}" th:text="'当前状态：' + ${form.periodStatus}">当前状态</p>
+        <div class="form-actions">
+            <button type="submit" th:if="${form.periodStatus != '关闭'}">保存</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

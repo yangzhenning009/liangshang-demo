@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>收入确认 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建收入确认' : '编辑收入确认'">编辑收入确认</h1>
+            <p class="lede">币种与账簿本位币一致。已审批后不能改，冲回时填写原确认并使用负金额。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/revenue-recognitions}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="${form.id == null} ? @{/revenue-recognitions} : @{/revenue-recognitions/{id}(id=${form.id})}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">账簿
+                <select th:field="*{ledgerId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${ledgerChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">期间
+                <select th:field="*{accountingPeriodId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${periodChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">合同
+                <select th:field="*{contractId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${contractChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">条款版本
+                <select th:field="*{contractTermVersionId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${termChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">项目
+                <select th:field="*{projectId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${projectChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">阶段
+                <select th:field="*{contractStageId}">
+                    <option value="">不指定</option>
+                    <option th:each="item : ${stageChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">确认日
+                <input type="date" th:field="*{recognitionDate}" required>
+            </label>
+            <label class="field">金额
+                <input type="number" step="0.01" th:field="*{recognizedRevenueAmount}" required>
+            </label>
+            <label class="field">币种
+                <input th:field="*{currency}" placeholder="默认同本位币">
+            </label>
+            <label class="field">政策编号
+                <input th:field="*{revenuePolicyCode}" required>
+            </label>
+            <label class="field">政策版本
+                <input th:field="*{revenuePolicyVersion}" required>
+            </label>
+            <label class="field">验收
+                <select th:field="*{acceptanceEventId}">
+                    <option value="">不引用</option>
+                    <option th:each="item : ${acceptanceChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">冲回的原确认
+                <input type="number" min="1" th:field="*{reversalOfRecognitionId}" placeholder="普通确认留空">
+            </label>
+            <label class="field">依据材料
+                <select th:replace="~{fragments/document-select :: bound('sourceDocumentId')}"></select>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="item : ${revenueStatuses}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">审批人
+                <select th:field="*{approvedByEmployeeId}">
+                    <option value="">未审批</option>
+                    <option th:each="item : ${employeeChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">审批时间
+                <input type="datetime-local" th:field="*{approvedAt}">
+            </label>
+        </div>
+        <div class="form-actions" th:if="${form.status != '已审批' and form.status != '已作废'}">
+            <button type="submit">保存</button>
+        </div>
+        <p class="hint" th:if="${form.status == '已审批'}">这条已经审批。要更正，请新建一条负金额的冲回。</p>
+    </form>
+</main>
+</body>
+</html>

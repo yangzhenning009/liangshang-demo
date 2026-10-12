@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>凭证 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>凭证</h1>
+            <p class="lede">草稿可以先不平衡。过账时借方必须等于贷方，并且期间仍然开放。已过账的凭证不能改，只能另做冲销。</p>
+        </div>
+        <a class="btn" th:href="@{/journal-entries/new}">新建凭证</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>凭证号</th>
+                    <th>日期</th>
+                    <th>摘要</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="5" class="empty">还没有凭证。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.voucherNumber}">JE-1</td>
+                    <td th:text="${item.voucherDate}">2026-03-15</td>
+                    <td th:text="${item.description}">记一笔</td>
+                    <td><span class="badge" th:text="${item.status}">草稿</span></td>
+                    <td class="actions"><a th:href="@{/journal-entries/{id}/edit(id=${item.id})}">打开</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

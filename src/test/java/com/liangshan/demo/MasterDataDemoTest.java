@@ -31,6 +31,9 @@ import com.liangshan.demo.domain.ContractStageTermVersion;
 import com.liangshan.demo.domain.ContractTermVersion;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
 import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.domain.JournalEntry;
+import com.liangshan.demo.domain.JournalLine;
+import com.liangshan.demo.domain.JournalLineSource;
 import com.liangshan.demo.domain.PayableItem;
 import com.liangshan.demo.domain.ReceivableItem;
 import com.liangshan.demo.repository.CostAllocationRepository;
@@ -38,6 +41,9 @@ import com.liangshan.demo.repository.CostOccurrenceRepository;
 import com.liangshan.demo.repository.ContractBillingScheduleRepository;
 import com.liangshan.demo.repository.ContractPaymentScheduleRepository;
 import com.liangshan.demo.repository.InvoiceLineRepository;
+import com.liangshan.demo.repository.JournalEntryRepository;
+import com.liangshan.demo.repository.JournalLineRepository;
+import com.liangshan.demo.repository.JournalLineSourceRepository;
 import com.liangshan.demo.repository.PayableItemRepository;
 import com.liangshan.demo.repository.ReceivableItemRepository;
 import com.liangshan.demo.repository.PaymentAllocationRepository;
@@ -59,6 +65,10 @@ import com.liangshan.demo.repository.ProjectVersionRepository;
 import com.liangshan.demo.service.CostOccurrenceService;
 import com.liangshan.demo.service.FundsService;
 import com.liangshan.demo.service.InvoiceService;
+import com.liangshan.demo.service.JournalService;
+import com.liangshan.demo.service.LedgerService;
+import com.liangshan.demo.service.MonthEndService;
+import com.liangshan.demo.service.RevenueRecognitionService;
 import com.liangshan.demo.service.ExpenseClaimService;
 import com.liangshan.demo.service.LaborCostRateService;
 import com.liangshan.demo.service.WorkLogService;
@@ -67,9 +77,14 @@ import com.liangshan.demo.service.FulfillmentService;
 import com.liangshan.demo.service.PersonService;
 import com.liangshan.demo.service.ProjectService;
 import com.liangshan.demo.service.SupplierService;
+import com.liangshan.demo.web.form.AccountForm;
 import com.liangshan.demo.web.form.CompanyForm;
 import com.liangshan.demo.web.form.DepartmentForm;
 import com.liangshan.demo.web.form.EmployeeForm;
+import com.liangshan.demo.web.form.JournalForm;
+import com.liangshan.demo.web.form.LedgerForm;
+import com.liangshan.demo.web.form.PeriodForm;
+import com.liangshan.demo.web.form.RevenueForm;
 import com.liangshan.demo.web.form.EmployeeOrgForm;
 import com.liangshan.demo.web.form.EmployeeOrgForm.AssignmentForm;
 import com.liangshan.demo.web.form.EmployeeOrgForm.EmploymentForm;
@@ -92,6 +107,7 @@ import com.liangshan.demo.web.form.ContractAmendmentForm;
 import com.liangshan.demo.web.form.ContractPlanForm;
 import com.liangshan.demo.web.form.DeliveryEventForm;
 import com.liangshan.demo.web.form.ContractDetailForm;
+import com.liangshan.demo.web.form.ContractDetailForm.LinkForm;
 import com.liangshan.demo.web.form.ContractDetailForm.DeliverableForm;
 import com.liangshan.demo.web.form.ContractDetailForm.LineForm;
 import com.liangshan.demo.web.form.ContractDetailForm.StageForm;
@@ -251,6 +267,20 @@ class MasterDataDemoTest {
     private ContractPaymentScheduleRepository paymentSchedules;
     @Autowired
     private ContractBillingScheduleRepository billingSchedules;
+    @Autowired
+    private LedgerService ledgerService;
+    @Autowired
+    private JournalService journalService;
+    @Autowired
+    private RevenueRecognitionService revenueRecognitions;
+    @Autowired
+    private MonthEndService monthEnd;
+    @Autowired
+    private JournalEntryRepository journalEntries;
+    @Autowired
+    private JournalLineRepository journalLines;
+    @Autowired
+    private JournalLineSourceRepository journalSources;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -334,7 +364,14 @@ class MasterDataDemoTest {
                 "invoice_line_allocation",
                 "receivable_item",
                 "receivable_adjustment",
-                "payable_adjustment")));
+                "payable_adjustment",
+                "ledger",
+                "accounting_account",
+                "accounting_period",
+                "journal_entry",
+                "journal_line",
+                "journal_line_source",
+                "revenue_recognition")));
         assertEquals("integer", String.valueOf(column("contract_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals("integer", String.valueOf(column("contract_stage_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("contract", "contract_number").get("notnull")).intValue());
@@ -456,6 +493,31 @@ class MasterDataDemoTest {
         assertEquals(0, ((Number) column("labor_cost_rate", "basis_document_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("labor_cost_rate", "approved_by_employee_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("labor_cost_rate", "approved_at").get("notnull")).intValue());
+        assertEquals("integer", String.valueOf(column("ledger", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("accounting_account", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("accounting_period", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("journal_entry", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("journal_line", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("journal_line_source", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("revenue_recognition", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(1, ((Number) column("ledger", "legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("ledger", "scope_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("accounting_account", "parent_account_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("accounting_account", "is_postable").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("accounting_period", "closed_by_employee_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("journal_line", "debit_amount").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("journal_line", "credit_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_entry", "reversal_of_entry_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_entry", "posted_by_employee_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_line", "source_document_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_line_source", "cost_occurrence_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_line_source", "receivable_item_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_line_source", "payable_item_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_line_source", "payment_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("journal_line_source", "revenue_recognition_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("revenue_recognition", "reversal_of_recognition_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("revenue_recognition", "contract_stage_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("revenue_recognition", "recognized_revenue_amount").get("notnull")).intValue());
     }
 
     @Test
@@ -1808,6 +1870,304 @@ class MasterDataDemoTest {
         long paymentId = funds.savePayment(split);
         assertEquals(0, BigDecimal.ZERO.compareTo(funds.outstandingReceivable(receivableId)));
         funds.savePayment(funds.paymentForm(paymentId));
+    }
+
+    @Test
+    void journalPostReverseClosedPeriodAndMonthEnd() throws Exception {
+        long hqId = companyForOrg("ME-HQ", "梁山总公司");
+        CompanyForm branchForm = company("ME-SH", "梁山上海分公司", "branch");
+        branchForm.setHeadCompanyId(hqId);
+        long branchId = companies.save(branchForm);
+        assertNull(companyRepository.findById(branchId).orElseThrow().legalPersonId);
+        long legalPersonId = companyRepository.findById(hqId).orElseThrow().legalPersonId;
+        long buyerId = companyForOrg("ME-BUY", "月结客户");
+        long clerk = employee("顾大嫂核算", "E-ME");
+        long vendor = person("月结供方");
+        SourceDocumentForm document = new SourceDocumentForm();
+        document.setDocumentType("合同");
+        document.setDocumentNumber("DOC-ME");
+        document.setIssuerCompanyId(hqId);
+        document.setStatus("有效");
+        long documentId = sourceDocuments.save(document);
+
+        long sellerPerson = person("月结占位卖方");
+        ContractForm contractForm = contract("CT-ME", "上海三月交付", "销售", buyerId, sellerPerson);
+        contractForm.setSellerPersonId(null);
+        contractForm.setSellerCompanyId(branchId);
+        contractForm.setSellerNameSnapshot("梁山上海分公司");
+        long contractId = contractService.save(contractForm);
+        long termId = contractTerms.findByContractIdOrderByVersionNumberAsc(contractId).get(0).id;
+        long projectId = projectService.save(project("PJ-ME", "上海三月项目", branchId));
+        ContractDetailForm details = new ContractDetailForm();
+        LinkForm link = new LinkForm();
+        link.setProjectId(projectId);
+        details.getLinks().add(link);
+        contractService.saveDetails(contractId, details);
+
+        long branchLedgerId = ledgerService.saveLedger(ledger(legalPersonId, branchId, "LB-SH", "上海分公司账簿"));
+        long hqLedgerId = ledgerService.saveLedger(ledger(legalPersonId, hqId, "LB-HQ", "总公司账簿"));
+        long branchPeriodId = ledgerService.savePeriod(period(branchLedgerId));
+        long hqPeriodId = ledgerService.savePeriod(period(hqLedgerId));
+        long cashId = ledgerService.saveAccount(account(branchLedgerId, "1001", "库存现金", "资产", "借"));
+        long incomeId = ledgerService.saveAccount(account(branchLedgerId, "6001", "主营业务收入", "收入", "贷"));
+
+        CostForm branchCost = spend(branchId, "COST-ME-BR", "400", "其他", null, clerk, null);
+        branchCost.setIncurredAt(LocalDateTime.of(2027, 11, 10, 9, 0));
+        long branchCostId = costOccurrences.save(branchCost);
+        CostForm hqCost = spend(hqId, "COST-ME-HQ", "100", "其他", null, clerk, null);
+        hqCost.setIncurredAt(LocalDateTime.of(2027, 11, 11, 9, 0));
+        costOccurrences.save(hqCost);
+        CostForm voidCost = spend(branchId, "COST-ME-VOID", "9999", "其他", null, clerk, null);
+        voidCost.setIncurredAt(LocalDateTime.of(2027, 11, 12, 9, 0));
+        voidCost.setStatus("已作废");
+        costOccurrences.save(voidCost);
+
+        ReceivableForm branchReceivable = confirmedReceivable("AR-ME-BR", branchId, buyerId, clerk, documentId);
+        branchReceivable.setReceivableAmount(new BigDecimal("800"));
+        branchReceivable.setConfirmedAt(LocalDateTime.of(2027, 11, 5, 9, 0));
+        long branchReceivableId = funds.saveReceivable(branchReceivable);
+        ReceivableForm hqReceivable = confirmedReceivable("AR-ME-HQ", hqId, buyerId, clerk, documentId);
+        hqReceivable.setReceivableAmount(new BigDecimal("300"));
+        hqReceivable.setConfirmedAt(LocalDateTime.of(2027, 11, 6, 9, 0));
+        funds.saveReceivable(hqReceivable);
+        ReceivableForm draftReceivable = confirmedReceivable("AR-ME-DRAFT", branchId, buyerId, clerk, documentId);
+        draftReceivable.setReceivableAmount(new BigDecimal("9999"));
+        draftReceivable.setStatus("草稿");
+        draftReceivable.setConfirmedAt(LocalDateTime.of(2027, 11, 6, 9, 0));
+        draftReceivable.setConfirmedByEmployeeId(null);
+        funds.saveReceivable(draftReceivable);
+
+        PayableForm branchPayable = new PayableForm();
+        branchPayable.setPayableNumber("AP-ME-BR");
+        branchPayable.setDebtorCompanyId(branchId);
+        branchPayable.setCreditorPersonId(vendor);
+        branchPayable.setPayablePurpose("其他");
+        branchPayable.setPayableAmount(new BigDecimal("200"));
+        branchPayable.setCurrency("CNY");
+        branchPayable.setStatus("已确认");
+        branchPayable.setConfirmedByEmployeeId(clerk);
+        branchPayable.setConfirmedAt(LocalDateTime.of(2027, 11, 8, 9, 0));
+        branchPayable.setSourceDocumentId(documentId);
+        funds.savePayable(branchPayable);
+        PayableForm hqPayable = new PayableForm();
+        hqPayable.setPayableNumber("AP-ME-HQ");
+        hqPayable.setDebtorCompanyId(hqId);
+        hqPayable.setCreditorPersonId(vendor);
+        hqPayable.setPayablePurpose("其他");
+        hqPayable.setPayableAmount(new BigDecimal("50"));
+        hqPayable.setCurrency("CNY");
+        hqPayable.setStatus("已确认");
+        hqPayable.setConfirmedByEmployeeId(clerk);
+        hqPayable.setConfirmedAt(LocalDateTime.of(2027, 11, 8, 10, 0));
+        hqPayable.setSourceDocumentId(documentId);
+        funds.savePayable(hqPayable);
+
+        long journalsBefore = journalEntries.count();
+        RevenueForm branchRevenue = recognition(branchLedgerId, branchPeriodId, contractId, termId, projectId, documentId, clerk, "1000");
+        long branchRevenueId = revenueRecognitions.save(branchRevenue);
+        revenueRecognitions.save(recognition(hqLedgerId, hqPeriodId, contractId, termId, projectId, documentId, clerk, "500"));
+        RevenueForm draftRevenue = recognition(branchLedgerId, branchPeriodId, contractId, termId, projectId, documentId, clerk, "9999");
+        draftRevenue.setStatus("草稿");
+        draftRevenue.setApprovedByEmployeeId(null);
+        draftRevenue.setApprovedAt(null);
+        revenueRecognitions.save(draftRevenue);
+        assertEquals(journalsBefore, journalEntries.count());
+
+        RevenueForm tooMuch = recognition(branchLedgerId, branchPeriodId, contractId, termId, projectId, documentId, clerk, "-2000");
+        tooMuch.setStatus("草稿");
+        tooMuch.setReversalOfRecognitionId(branchRevenueId);
+        tooMuch.setApprovedByEmployeeId(null);
+        tooMuch.setApprovedAt(null);
+        assertTrue(messageOf(() -> revenueRecognitions.save(tooMuch)).contains("累计冲回"));
+        RevenueForm reversal = recognition(branchLedgerId, branchPeriodId, contractId, termId, projectId, documentId, clerk, "-100");
+        reversal.setStatus("草稿");
+        reversal.setReversalOfRecognitionId(branchRevenueId);
+        reversal.setApprovedByEmployeeId(null);
+        reversal.setApprovedAt(null);
+        long reversalId = revenueRecognitions.save(reversal);
+        assertEquals("草稿", revenueRecognitions.get(reversalId).status);
+
+        JournalForm balanced = voucher(branchLedgerId, branchPeriodId, "JE-ME-BAL", clerk, cashId, "100", incomeId, "100");
+        long balancedId = journalService.save(balanced);
+        assertEquals("草稿", journalService.get(balancedId).status);
+        journalService.post(balancedId, clerk);
+        assertEquals("已过账", journalService.get(balancedId).status);
+        assertTrue(messageOf(() -> journalService.save(journalService.form(balancedId))).contains("不能修改"));
+
+        JournalForm unbalanced = voucher(branchLedgerId, branchPeriodId, "JE-ME-BAD", clerk, cashId, "100", incomeId, "40");
+        long unbalancedId = journalService.save(unbalanced);
+        assertTrue(messageOf(() -> journalService.post(unbalancedId, clerk)).contains("不平衡"));
+
+        JournalForm sourced = voucher(branchLedgerId, branchPeriodId, "JE-ME-SRC", clerk, cashId, "400", incomeId, "400");
+        JournalForm.SourceRow costSource = new JournalForm.SourceRow();
+        costSource.setLineNumber(1);
+        costSource.setCostOccurrenceId(branchCostId);
+        costSource.setSourceContributionAmount(new BigDecimal("400"));
+        costSource.setCurrency("CNY");
+        JournalForm.SourceRow revenueSource = new JournalForm.SourceRow();
+        revenueSource.setLineNumber(2);
+        revenueSource.setRevenueRecognitionId(branchRevenueId);
+        revenueSource.setSourceContributionAmount(new BigDecimal("400"));
+        revenueSource.setCurrency("CNY");
+        sourced.getSources().add(costSource);
+        sourced.getSources().add(revenueSource);
+        JournalForm.SourceRow receivableSource = new JournalForm.SourceRow();
+        receivableSource.setLineNumber(1);
+        receivableSource.setReceivableItemId(branchReceivableId);
+        receivableSource.setSourceContributionAmount(new BigDecimal("400"));
+        receivableSource.setCurrency("CNY");
+        sourced.getSources().add(receivableSource);
+        assertTrue(messageOf(() -> journalService.save(sourced)).contains("来源贡献合计"));
+        sourced.getSources().remove(receivableSource);
+        long sourcedId = journalService.save(sourced);
+        journalService.post(sourcedId, clerk);
+        JournalLine debitLine = journalLines.findByJournalEntryIdOrderByLineNumberAscIdAsc(sourcedId).get(0);
+        JournalLineSource storedSource = journalSources.findByJournalLineIdOrderByIdAsc(debitLine.id).get(0);
+        assertEquals(branchCostId, storedSource.costOccurrenceId);
+        assertNull(storedSource.revenueRecognitionId);
+        assertNull(storedSource.receivableItemId);
+        assertEquals(0, new BigDecimal("400").compareTo(storedSource.sourceContributionAmount));
+        JournalLine creditLine = journalLines.findByJournalEntryIdOrderByLineNumberAscIdAsc(sourcedId).get(1);
+        assertEquals(branchRevenueId, journalSources.findByJournalLineIdOrderByIdAsc(creditLine.id).get(0).revenueRecognitionId);
+
+        long reversalEntryId = journalService.reverse(balancedId, clerk, "科目用错");
+        JournalEntry reversalEntry = journalEntries.findById(reversalEntryId).orElseThrow();
+        assertEquals(balancedId, reversalEntry.reversalOfEntryId);
+        assertEquals("已过账", reversalEntry.status);
+        List<JournalLine> reversedLines = journalLines.findByJournalEntryIdOrderByLineNumberAscIdAsc(reversalEntryId);
+        assertEquals(0, new BigDecimal("100").compareTo(reversedLines.get(0).creditAmount));
+        assertEquals(0, BigDecimal.ZERO.compareTo(reversedLines.get(0).debitAmount));
+        assertEquals(0, new BigDecimal("100").compareTo(reversedLines.get(1).debitAmount));
+
+        ledgerService.closePeriod(branchPeriodId, clerk);
+        JournalForm late = voucher(branchLedgerId, branchPeriodId, "JE-ME-LATE", clerk, cashId, "20", incomeId, "20");
+        long lateId = journalService.save(late);
+        assertTrue(messageOf(() -> journalService.post(lateId, clerk)).contains("关闭"));
+        assertTrue(messageOf(() -> journalService.reverse(sourcedId, clerk, "期间已关")).contains("关闭"));
+
+        List<MonthEndService.SummaryRow> march = monthEnd.summarize(2027, 11);
+        assertEquals("集团", march.get(0).label());
+        assertEquals(0, new BigDecimal("1500.00").compareTo(march.get(0).revenue()));
+        assertEquals(0, new BigDecimal("500.00").compareTo(march.get(0).cost()));
+        assertEquals(0, new BigDecimal("1100.00").compareTo(march.get(0).receivables()));
+        assertEquals(0, new BigDecimal("250.00").compareTo(march.get(0).payables()));
+        MonthEndService.SummaryRow branchRow = march.stream()
+                .filter(row -> "梁山上海分公司".equals(row.label()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(0, new BigDecimal("1000.00").compareTo(branchRow.revenue()));
+        assertEquals(0, new BigDecimal("400.00").compareTo(branchRow.cost()));
+        assertEquals(0, new BigDecimal("800.00").compareTo(branchRow.receivables()));
+        assertEquals(0, new BigDecimal("200.00").compareTo(branchRow.payables()));
+        assertTrue(march.stream().noneMatch(row -> "梁山总公司".equals(row.label())));
+        List<MonthEndService.SummaryRow> april = monthEnd.summarize(2027, 12);
+        assertEquals(0, BigDecimal.ZERO.compareTo(april.get(0).revenue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(april.get(0).cost()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(april.get(0).receivables()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(april.get(0).payables()));
+
+        mvc.perform(get("/month-end").param("year", "2027").param("month", "11"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("集团")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("梁山上海分公司")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("1500.00")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("1000.00")));
+        mvc.perform(get("/journal-entries"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("JE-ME-BAL")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("已过账")));
+        mvc.perform(get("/accounting-periods"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("关闭")));
+        mvc.perform(get("/ledgers")).andExpect(status().isOk());
+        mvc.perform(get("/accounts")).andExpect(status().isOk());
+        mvc.perform(get("/journal-entries/new")).andExpect(status().isOk());
+        mvc.perform(get("/revenue-recognitions"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("已审批")));
+        mvc.perform(get("/revenue-recognitions/new")).andExpect(status().isOk());
+    }
+
+    private LedgerForm ledger(long legalPersonId, long companyId, String code, String name) {
+        LedgerForm form = new LedgerForm();
+        form.setLegalPersonId(legalPersonId);
+        form.setScopeCompanyId(companyId);
+        form.setLedgerCode(code);
+        form.setName(name);
+        form.setLedgerType("公司账簿");
+        form.setBaseCurrency("CNY");
+        form.setStatus("启用");
+        return form;
+    }
+
+    private PeriodForm period(long ledgerId) {
+        PeriodForm form = new PeriodForm();
+        form.setLedgerId(ledgerId);
+        form.setFiscalYear(2027);
+        form.setPeriodNumber(11);
+        form.setPeriodStartDate(LocalDate.of(2027, 11, 1));
+        form.setPeriodEndDate(LocalDate.of(2027, 11, 30));
+        form.setPeriodStatus("开放");
+        return form;
+    }
+
+    private AccountForm account(long ledgerId, String code, String name, String category, String direction) {
+        AccountForm form = new AccountForm();
+        form.setLedgerId(ledgerId);
+        form.setAccountCode(code);
+        form.setAccountName(name);
+        form.setAccountCategory(category);
+        form.setNormalBalanceDirection(direction);
+        form.setPostable(true);
+        form.setValidFrom(LocalDate.of(2026, 1, 1));
+        form.setStatus("启用");
+        return form;
+    }
+
+    private RevenueForm recognition(
+            long ledgerId, long periodId, long contractId, long termId, long projectId, long documentId, long clerk, String amount) {
+        RevenueForm form = new RevenueForm();
+        form.setLedgerId(ledgerId);
+        form.setAccountingPeriodId(periodId);
+        form.setContractId(contractId);
+        form.setContractTermVersionId(termId);
+        form.setProjectId(projectId);
+        form.setRecognitionDate(LocalDate.of(2027, 11, 15));
+        form.setRecognizedRevenueAmount(new BigDecimal(amount));
+        form.setCurrency("CNY");
+        form.setRevenuePolicyCode("POINT");
+        form.setRevenuePolicyVersion("1");
+        form.setSourceDocumentId(documentId);
+        form.setApprovedByEmployeeId(clerk);
+        form.setApprovedAt(LocalDateTime.of(2027, 11, 16, 10, 0));
+        form.setStatus("已审批");
+        return form;
+    }
+
+    private JournalForm voucher(
+            long ledgerId, long periodId, String number, long preparer, long debitAccount, String debit, long creditAccount, String credit) {
+        JournalForm form = new JournalForm();
+        form.setLedgerId(ledgerId);
+        form.setAccountingPeriodId(periodId);
+        form.setVoucherNumber(number);
+        form.setVoucherDate(LocalDate.of(2027, 11, 15));
+        form.setEntryDescription(number);
+        form.setPreparedByEmployeeId(preparer);
+        form.setStatus("草稿");
+        form.getLines().add(journalLine(1, debitAccount, debit, "0"));
+        form.getLines().add(journalLine(2, creditAccount, "0", credit));
+        return form;
+    }
+
+    private JournalForm.LineRow journalLine(int number, long accountId, String debit, String credit) {
+        JournalForm.LineRow row = new JournalForm.LineRow();
+        row.setLineNumber(number);
+        row.setAccountingAccountId(accountId);
+        row.setLineDescription("行" + number);
+        row.setDebitAmount(new BigDecimal(debit));
+        row.setCreditAmount(new BigDecimal(credit));
+        row.setCurrency("CNY");
+        return row;
     }
 
     private ReceivableForm confirmedReceivable(String number, long creditor, long debtor, long clerk, long documentId) {

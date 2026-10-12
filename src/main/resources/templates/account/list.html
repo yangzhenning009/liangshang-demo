@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>科目 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>科目</h1>
+            <p class="lede">科目属于某一本账簿。停用或非记账科目不能用于新分录。这里不预置科目表。</p>
+        </div>
+        <a class="btn" th:href="@{/accounts/new}">新建科目</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>类别</th>
+                    <th>方向</th>
+                    <th>可记账</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="7" class="empty">还没有科目。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.accountCode}">1001</td>
+                    <td th:text="${item.accountName}">库存现金</td>
+                    <td th:text="${item.accountCategory}">资产</td>
+                    <td th:text="${item.normalBalanceDirection}">借</td>
+                    <td th:text="${item.postable} ? '是' : '否'">是</td>
+                    <td><span class="badge" th:text="${item.status}">启用</span></td>
+                    <td class="actions"><a th:href="@{/accounts/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

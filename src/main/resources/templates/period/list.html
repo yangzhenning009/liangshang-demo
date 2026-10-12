@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>会计期间 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>会计期间</h1>
+            <p class="lede">已关闭的期间不能过账，也不能在里面做冲销。重新开放后可以继续记账，已过账凭证仍然保留。</p>
+        </div>
+        <a class="btn" th:href="@{/accounting-periods/new}">新建期间</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>年度</th>
+                    <th>序号</th>
+                    <th>起</th>
+                    <th>止</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="6" class="empty">还没有期间。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.fiscalYear}">2026</td>
+                    <td th:text="${item.periodNumber}">3</td>
+                    <td th:text="${item.periodStartDate}">2026-03-01</td>
+                    <td th:text="${item.periodEndDate}">2026-03-31</td>
+                    <td><span class="badge" th:text="${item.periodStatus}">开放</span></td>
+                    <td class="actions">
+                        <a th:href="@{/accounting-periods/{id}/edit(id=${item.id})}">编辑</a>
+                        <form th:if="${item.periodStatus == '开放'}" th:action="@{/accounting-periods/{id}/close(id=${item.id})}" method="post">
+                            <select name="closedByEmployeeId">
+                                <option value="">关闭人</option>
+                                <option th:each="employee : ${employeeChoices}" th:value="${employee.id}" th:text="${employee.label}"></option>
+                            </select>
+                            <button class="small" type="submit">关闭</button>
+                        </form>
+                        <form th:if="${item.periodStatus == '关闭'}" th:action="@{/accounting-periods/{id}/open(id=${item.id})}" method="post">
+                            <button class="small secondary" type="submit">重新开放</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

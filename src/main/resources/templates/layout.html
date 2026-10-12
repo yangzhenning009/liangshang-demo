@@ -45,6 +45,12 @@
             <a th:href="@{/receivables}" th:classappend="${activeNav == 'receivables'} ? 'active'">应收</a>
             <a th:href="@{/payables}" th:classappend="${activeNav == 'payables'} ? 'active'">应付</a>
             <a th:href="@{/payments}" th:classappend="${activeNav == 'payments'} ? 'active'">收付款</a>
+            <a th:href="@{/ledgers}" th:classappend="${activeNav == 'ledgers'} ? 'active'">账簿</a>
+            <a th:href="@{/accounts}" th:classappend="${activeNav == 'accounts'} ? 'active'">科目</a>
+            <a th:href="@{/accounting-periods}" th:classappend="${activeNav == 'periods'} ? 'active'">期间</a>
+            <a th:href="@{/journal-entries}" th:classappend="${activeNav == 'journals'} ? 'active'">凭证</a>
+            <a th:href="@{/revenue-recognitions}" th:classappend="${activeNav == 'revenue'} ? 'active'">收入确认</a>
+            <a th:href="@{/month-end}" th:classappend="${activeNav == 'month-end'} ? 'active'">月度核算</a>
         </nav>
         <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
     </aside>

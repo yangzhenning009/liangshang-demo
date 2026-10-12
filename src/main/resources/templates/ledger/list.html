@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>账簿 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>账簿</h1>
+            <p class="lede">公司账簿记下范围公司。分公司的归属法人取总公司，范围仍是分公司自己。</p>
+        </div>
+        <a class="btn" th:href="@{/ledgers/new}">新建账簿</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>本位币</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="6" class="empty">还没有账簿。科目和凭证都挂在账簿上。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.ledgerCode}">LB-1</td>
+                    <td th:text="${item.name}">上海账簿</td>
+                    <td th:text="${item.ledgerType}">公司账簿</td>
+                    <td th:text="${item.baseCurrency}">CNY</td>
+                    <td><span class="badge" th:text="${item.status}">启用</span></td>
+                    <td class="actions"><a th:href="@{/ledgers/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

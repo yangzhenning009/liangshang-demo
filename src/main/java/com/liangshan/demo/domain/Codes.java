@@ -124,6 +124,30 @@ public final class Codes {
     public static final String SETTLEMENT_REVERSE = "reverse";
     public static final List<String> SETTLEMENT_ACTIONS = List.of(SETTLEMENT_APPLY, SETTLEMENT_REVERSE);
     public static final List<String> SETTLEMENT_STATUS = List.of("草稿", "已确认");
+    public static final String LEDGER_ACTIVE = "启用";
+    public static final List<String> LEDGER_STATUS = List.of(LEDGER_ACTIVE, "停用");
+    public static final List<String> LEDGER_TYPES = List.of("公司账簿", "法人账簿");
+    public static final String ACCOUNT_ASSET = "资产";
+    public static final String ACCOUNT_LIABILITY = "负债";
+    public static final String ACCOUNT_EQUITY = "权益";
+    public static final String ACCOUNT_INCOME = "收入";
+    public static final String ACCOUNT_EXPENSE = "费用";
+    public static final List<String> ACCOUNT_CATEGORIES = List.of(
+            ACCOUNT_ASSET, ACCOUNT_LIABILITY, ACCOUNT_EQUITY, ACCOUNT_INCOME, ACCOUNT_EXPENSE);
+    public static final String BALANCE_DEBIT = "借";
+    public static final String BALANCE_CREDIT = "贷";
+    public static final List<String> BALANCE_DIRECTIONS = List.of(BALANCE_DEBIT, BALANCE_CREDIT);
+    public static final List<String> ACCOUNT_STATUS = List.of(LEDGER_ACTIVE, "停用");
+    public static final String PERIOD_OPEN = "开放";
+    public static final String PERIOD_CLOSED = "关闭";
+    public static final List<String> PERIOD_STATUS = List.of(PERIOD_OPEN, PERIOD_CLOSED);
+    public static final String JOURNAL_DRAFT = "草稿";
+    public static final String JOURNAL_POSTED = "已过账";
+    public static final List<String> JOURNAL_STATUS = List.of(JOURNAL_DRAFT, JOURNAL_POSTED);
+    public static final String REVENUE_DRAFT = "草稿";
+    public static final String REVENUE_APPROVED = "已审批";
+    public static final String REVENUE_VOID = "已作废";
+    public static final List<String> REVENUE_STATUS = List.of(REVENUE_DRAFT, REVENUE_APPROVED, REVENUE_VOID);
 
     private Codes() {
     }

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>凭证 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建凭证' : (${form.status == '已过账'} ? '已过账凭证' : '编辑凭证')">编辑凭证</h1>
+            <p class="lede">过账要求借贷相等。已过账后只能冲销：新凭证对调借贷，并保留原凭证。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/journal-entries}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="${form.id == null} ? @{/journal-entries} : @{/journal-entries/{id}(id=${form.id})}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <input type="hidden" th:field="*{reversalOfEntryId}">
+        <p class="hint" th:if="${form.status != null}">状态：<span th:text="${form.status}">草稿</span></p>
+        <div class="grid">
+            <label class="field">账簿
+                <select th:field="*{ledgerId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${ledgerChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">期间
+                <select th:field="*{accountingPeriodId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${periodChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">凭证号
+                <input th:field="*{voucherNumber}" required>
+            </label>
+            <label class="field">记账日期
+                <input type="date" th:field="*{voucherDate}" required>
+            </label>
+            <label class="field">制单人
+                <select th:field="*{preparedByEmployeeId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${employeeChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">审核人
+                <select th:field="*{reviewedByEmployeeId}">
+                    <option value="">未审核</option>
+                    <option th:each="item : ${employeeChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">审核时间
+                <input type="datetime-local" th:field="*{reviewedAt}">
+            </label>
+            <label class="field">摘要
+                <input th:field="*{entryDescription}" required>
+            </label>
+            <label class="field">调整原因
+                <input th:field="*{adjustmentReason}" placeholder="手工调整时填写">
+            </label>
+        </div>
+
+        <h2>分录</h2>
+        <p class="hint">每行借方或贷方只有一边为正。没有业务来源的手工行不必伪造来源，可在本行记下依据材料。</p>
+        <div id="line-rows">
+            <div class="repeat-row" th:each="row, stat : *{lines}">
+                <div class="row-tools">
+                    <strong>分录行</strong>
+                    <label class="check"><input type="checkbox" th:field="*{lines[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{lines[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">行号
+                        <input type="number" min="1" th:field="*{lines[__${stat.index}__].lineNumber}">
+                    </label>
+                    <label class="field">科目
+                        <select th:field="*{lines[__${stat.index}__].accountingAccountId}">
+                            <option value="">请选择</option>
+                            <option th:each="item : ${accountChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">摘要
+                        <input th:field="*{lines[__${stat.index}__].lineDescription}">
+                    </label>
+                    <label class="field">借方
+                        <input type="number" step="0.01" min="0" th:field="*{lines[__${stat.index}__].debitAmount}">
+                    </label>
+                    <label class="field">贷方
+                        <input type="number" step="0.01" min="0" th:field="*{lines[__${stat.index}__].creditAmount}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{lines[__${stat.index}__].currency}" placeholder="默认同本位币">
+                    </label>
+                    <label class="field">依据材料
+                        <select th:replace="~{fragments/document-select :: bound('lines[__${stat.index}__].sourceDocumentId')}"></select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('line-rows','line-template')">增加分录</button>
+
+        <h2>业务来源</h2>
+        <p class="hint">每一条来源只指向一种事实。同一行的贡献合计必须等于该行非零一侧的金额。</p>
+        <div id="source-rows">
+            <div class="repeat-row" th:each="row, stat : *{sources}">
+                <div class="row-tools">
+                    <strong>来源</strong>
+                    <label class="check"><input type="checkbox" th:field="*{sources[__${stat.index}__].removed}"> 删除此行</label>
+                </div>
+                <input type="hidden" th:field="*{sources[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">对应行号
+                        <input type="number" min="1" th:field="*{sources[__${stat.index}__].lineNumber}">
+                    </label>
+                    <label class="field">费用
+                        <select th:field="*{sources[__${stat.index}__].costOccurrenceId}">
+                            <option value="">不引用</option>
+                            <option th:each="item : ${costChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">应收
+                        <select th:field="*{sources[__${stat.index}__].receivableItemId}">
+                            <option value="">不引用</option>
+                            <option th:each="item : ${receivableChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">应付
+                        <select th:field="*{sources[__${stat.index}__].payableItemId}">
+                            <option value="">不引用</option>
+                            <option th:each="item : ${payableChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">收付款
+                        <select th:field="*{sources[__${stat.index}__].paymentId}">
+                            <option value="">不引用</option>
+                            <option th:each="item : ${paymentChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">收入确认
+                        <select th:field="*{sources[__${stat.index}__].revenueRecognitionId}">
+                            <option value="">不引用</option>
+                            <option th:each="item : ${revenueChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">贡献金额
+                        <input type="number" step="0.01" min="0" th:field="*{sources[__${stat.index}__].sourceContributionAmount}">
+                    </label>
+                    <label class="field">币种
+                        <input th:field="*{sources[__${stat.index}__].currency}" placeholder="默认同本位币">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('source-rows','source-template')">增加来源</button>
+        <div class="form-actions" th:if="${form.status != '已过账'}">
+            <button type="submit">保存草稿</button>
+        </div>
+    </form>
+
+    <form class="panel" th:if="${form.id != null and form.status != '已过账'}" th:action="@{/journal-entries/{id}/post(id=${form.id})}" method="post">
+        <h2>过账</h2>
+        <div class="grid">
+            <label class="field">过账人
+                <select name="postedByEmployeeId">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${employeeChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">过账</button>
+        </div>
+    </form>
+
+    <form class="panel" th:if="${form.status == '已过账' and form.reversalOfEntryId == null}" th:action="@{/journal-entries/{id}/reverse(id=${form.id})}" method="post">
+        <h2>冲销</h2>
+        <p class="hint">冲销生成一张已过账的新凭证，借贷与原凭证对调。原期间必须仍然开放。</p>
+        <div class="grid">
+            <label class="field">冲销人
+                <select name="preparedByEmployeeId">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${employeeChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">原因
+                <input name="adjustmentReason" required>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">生成冲销凭证</button>
+        </div>
+    </form>
+
+    <div id="line-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>分录行</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="lines[__INDEX__].id" value="">
+            <input type="hidden" name="lines[__INDEX__].removed" value="false">
+            <div class="grid">
+                <label class="field">行号<input type="number" min="1" name="lines[__INDEX__].lineNumber"></label>
+                <label class="field">科目
+                    <select name="lines[__INDEX__].accountingAccountId">
+                        <option value="">请选择</option>
+                        <option th:each="item : ${accountChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                    </select>
+                </label>
+                <label class="field">摘要<input name="lines[__INDEX__].lineDescription"></label>
+                <label class="field">借方<input type="number" step="0.01" min="0" name="lines[__INDEX__].debitAmount"></label>
+                <label class="field">贷方<input type="number" step="0.01" min="0" name="lines[__INDEX__].creditAmount"></label>
+                <label class="field">币种<input name="lines[__INDEX__].currency" placeholder="默认同本位币"></label>
+                <label class="field">依据材料
+                    <select th:replace="~{fragments/document-select :: named('lines[IDX].sourceDocumentId')}"></select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="source-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>来源</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="sources[__INDEX__].id" value="">
+            <input type="hidden" name="sources[__INDEX__].removed" value="false">
+            <div class="grid">
+                <label class="field">对应行号<input type="number" min="1" name="sources[__INDEX__].lineNumber"></label>
+                <label class="field">费用
+                    <select name="sources[__INDEX__].costOccurrenceId">
+                        <option value="">不引用</option>
+                        <option th:each="item : ${costChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                    </select>
+                </label>
+                <label class="field">应收
+                    <select name="sources[__INDEX__].receivableItemId">
+                        <option value="">不引用</option>
+                        <option th:each="item : ${receivableChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                    </select>
+                </label>
+                <label class="field">应付
+                    <select name="sources[__INDEX__].payableItemId">
+                        <option value="">不引用</option>
+                        <option th:each="item : ${payableChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                    </select>
+                </label>
+                <label class="field">收付款
+                    <select name="sources[__INDEX__].paymentId">
+                        <option value="">不引用</option>
+                        <option th:each="item : ${paymentChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                    </select>
+                </label>
+                <label class="field">收入确认
+                    <select name="sources[__INDEX__].revenueRecognitionId">
+                        <option value="">不引用</option>
+                        <option th:each="item : ${revenueChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                    </select>
+                </label>
+                <label class="field">贡献金额<input type="number" step="0.01" min="0" name="sources[__INDEX__].sourceContributionAmount"></label>
+                <label class="field">币种<input name="sources[__INDEX__].currency" placeholder="默认同本位币"></label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

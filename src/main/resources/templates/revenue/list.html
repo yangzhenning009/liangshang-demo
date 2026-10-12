@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>收入确认 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>收入确认</h1>
+            <p class="lede">审批只记录确认结论，不会自动生成凭证。冲回另记一条负金额，累计不超过原确认。</p>
+        </div>
+        <a class="btn" th:href="@{/revenue-recognitions/new}">新建确认</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>确认日</th>
+                    <th>金额</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="4" class="empty">还没有收入确认。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.recognitionDate}">2026-03-15</td>
+                    <td th:text="${item.amount + ' ' + item.currency}">1000 CNY</td>
+                    <td><span class="badge" th:text="${item.status}">已审批</span></td>
+                    <td class="actions"><a th:href="@{/revenue-recognitions/{id}/edit(id=${item.id})}">打开</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

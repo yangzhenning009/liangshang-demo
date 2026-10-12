@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>账簿 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建账簿' : '编辑账簿'">编辑账簿</h1>
+            <p class="lede">法人账簿不填范围公司。公司账簿的范围若是分公司，归属法人必须是其总公司的法人。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/ledgers}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="${form.id == null} ? @{/ledgers} : @{/ledgers/{id}(id=${form.id})}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">账簿编号
+                <input th:field="*{ledgerCode}" required>
+            </label>
+            <label class="field">名称
+                <input th:field="*{name}" required>
+            </label>
+            <label class="field">类型
+                <select th:field="*{ledgerType}">
+                    <option th:each="type : ${ledgerTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </label>
+            <label class="field">本位币
+                <input th:field="*{baseCurrency}" placeholder="如 CNY" required>
+            </label>
+            <label class="field">归属法人
+                <select th:field="*{legalPersonId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${legalPersonChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">范围公司
+                <select th:field="*{scopeCompanyId}">
+                    <option value="">不填（法人账簿）</option>
+                    <option th:each="item : ${companyChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${ledgerStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

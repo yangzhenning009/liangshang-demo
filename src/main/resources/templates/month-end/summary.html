@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>月度核算 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>月度核算</h1>
+            <p class="lede">按所选月份汇总已审批收入、有效成本、已确认应收和已确认应付。集团一行是全部合计。下面每行是一家分公司。总公司的金额只进集团合计。</p>
+        </div>
+    </div>
+    <form class="panel filters" method="get" th:action="@{/month-end}">
+        <div class="grid">
+            <label class="field">年
+                <input type="number" name="year" th:value="${year}" required>
+            </label>
+            <label class="field">月
+                <input type="number" name="month" min="1" max="12" th:value="${month}" required>
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit">查看</button>
+        </div>
+    </form>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>范围</th>
+                    <th>收入</th>
+                    <th>成本</th>
+                    <th>应收</th>
+                    <th>应付</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${rows.isEmpty()}">
+                    <td colspan="5" class="empty">这个月份没有可汇总的记录。</td>
+                </tr>
+                <tr th:each="row : ${rows}">
+                    <td th:text="${row.label}">集团</td>
+                    <td th:text="${row.revenue}">0.00</td>
+                    <td th:text="${row.cost}">0.00</td>
+                    <td th:text="${row.receivables}">0.00</td>
+                    <td th:text="${row.payables}">0.00</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="hint">收入按确认日和账簿范围公司归集。成本按发生日和承担公司归集。应收按确认日和债权公司归集，应付按确认日和债务公司归集。未挂到分公司的金额只出现在集团合计。</p>
+    </div>
+</main>
+</body>
+</html>

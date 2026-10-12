@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>科目 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '新建科目' : '编辑科目'">编辑科目</h1>
+            <p class="lede">科目代码在同一账簿内不能重复。上级科目必须属于同一账簿，并且不能绕回自己。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/accounts}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" th:action="${form.id == null} ? @{/accounts} : @{/accounts/{id}(id=${form.id})}" method="post">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">账簿
+                <select th:field="*{ledgerId}">
+                    <option value="">请选择</option>
+                    <option th:each="item : ${ledgerChoices}" th:value="${item.id}" th:text="${item.label}"></option>
+                </select>
+            </label>
+            <label class="field">科目代码
+                <input th:field="*{accountCode}" required>
+            </label>
+            <label class="field">科目名称
+                <input th:field="*{accountName}" required>
+            </label>
+            <label class="field">上级科目
+                <select th:field="*{parentAccountId}">
+                    <option value="">无</option>
+                    <option th:each="item : ${parentAccounts}" th:if="${form.id == null or item.id != form.id}" th:value="${item.id}" th:text="${item.accountCode + ' ' + item.accountName}"></option>
+                </select>
+            </label>
+            <label class="field">类别
+                <select th:field="*{accountCategory}">
+                    <option th:each="item : ${accountCategories}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">余额方向
+                <select th:field="*{normalBalanceDirection}">
+                    <option th:each="item : ${balanceDirections}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">开始日
+                <input type="date" th:field="*{validFrom}" required>
+            </label>
+            <label class="field">结束日
+                <input type="date" th:field="*{validTo}">
+            </label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="status : ${ledgerStatuses}" th:value="${status}" th:text="${status}"></option>
+                </select>
+            </label>
+            <label class="check"><input type="checkbox" th:field="*{postable}"> 可记账</label>
+        </div>
+        <p class="hint">结束日留空表示一直有效。有效期含开始日，不含结束日。</p>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

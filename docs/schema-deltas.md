@@ -83,3 +83,23 @@ Schema 给出字段、未穷尽取值的，当前页面只用下列字符串。�
 | 现状 | 确认应收时，表单上的开票计划只用来推算到期日。`receivable_item` 不保存 `billing_schedule_id`。 |
 | 落库 | 算出的 `due_date`，以及触发用的验收或发票，写在应收上。 |
 | 依据 | Schema 的应收没有开票计划列。再次打开表单时看不到当时选的是哪一条开票计划。 |
+
+## 会计状态与过账
+
+Schema 给出会计字段，未穷尽状态字符串。当前页面只用下列取值。数据库仍是普通字符串，没有检查约束。
+
+| 字段 | 允许值 |
+|---|---|
+| `ledger.ledger_type` | `公司账簿`、`法人账簿` |
+| `ledger.status` / `accounting_account.status` | `启用`、`停用` |
+| `accounting_account.account_category` | `资产`、`负债`、`权益`、`收入`、`费用` |
+| `accounting_account.normal_balance_direction` | `借`、`贷` |
+| `accounting_period.period_status` | `开放`、`关闭` |
+| `journal_entry.status` | `草稿`、`已过账` |
+| `revenue_recognition.status` | `草稿`、`已审批`、`已作废` |
+
+| 项 | 内容 |
+|---|---|
+| 草稿平衡 | Schema 要求凭证按账簿规则平衡。当前草稿可以借贷不平衡，过账时才要求借方合计等于贷方合计且大于 0。 |
+| 期间重开 | 已关闭期间可以重新开放。重开不删除已过账凭证；关闭期间内不能新过账，也不能做冲销。 |
+| 月度核算 | 不落表。按所选月份汇总已审批收入、有效成本、已确认应收和已确认应付，不是科目余额。 |
