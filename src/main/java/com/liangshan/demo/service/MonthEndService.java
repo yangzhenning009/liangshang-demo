@@ -55,6 +55,7 @@ public class MonthEndService {
             branches.put(company.id, new Mutable(company.name));
         }
         Mutable group = new Mutable("集团");
+        Mutable headquarters = new Mutable("总部本级");
         Map<Long, Long> scopeByLedger = new LinkedHashMap<>();
         for (Ledger ledger : ledgers.findAll()) {
             scopeByLedger.put(ledger.id, ledger.scopeCompanyId);
@@ -63,40 +64,44 @@ public class MonthEndService {
             if (!Codes.REVENUE_APPROVED.equals(row.status) || !inMonth(row.recognitionDate, start, next)) {
                 continue;
             }
-            add(group, branches, scopeByLedger.get(row.ledgerId), row.recognizedRevenueAmount, Kind.REVENUE);
+            add(group, headquarters, branches, scopeByLedger.get(row.ledgerId), row.recognizedRevenueAmount, Kind.REVENUE);
         }
         for (CostOccurrence row : costs.findAll()) {
             if (!Codes.COST_EFFECTIVE.equals(row.status) || !inMonth(row.incurredAt, start, next)) {
                 continue;
             }
-            add(group, branches, row.bearingCompanyId, row.costAmount, Kind.COST);
+            add(group, headquarters, branches, row.bearingCompanyId, row.costAmount, Kind.COST);
         }
         for (ReceivableItem row : receivables.findAll()) {
             if (!CONFIRMED.equals(row.status) || !inMonth(row.confirmedAt, start, next)) {
                 continue;
             }
-            add(group, branches, row.creditorCompanyId, row.receivableAmount, Kind.RECEIVABLE);
+            add(group, headquarters, branches, row.creditorCompanyId, row.receivableAmount, Kind.RECEIVABLE);
         }
         for (PayableItem row : payables.findAll()) {
             if (!CONFIRMED.equals(row.status) || !inMonth(row.confirmedAt, start, next)) {
                 continue;
             }
-            add(group, branches, row.debtorCompanyId, row.payableAmount, Kind.PAYABLE);
+            add(group, headquarters, branches, row.debtorCompanyId, row.payableAmount, Kind.PAYABLE);
         }
         List<SummaryRow> rows = new ArrayList<>();
         rows.add(group.freeze(null));
+        rows.add(headquarters.freeze(null));
         for (Map.Entry<Long, Mutable> entry : branches.entrySet()) {
             rows.add(entry.getValue().freeze(entry.getKey()));
         }
         return rows;
     }
 
-    private static void add(Mutable group, Map<Long, Mutable> branches, Long companyId, BigDecimal amount, Kind kind) {
+    private static void add(
+            Mutable group, Mutable headquarters, Map<Long, Mutable> branches, Long companyId, BigDecimal amount, Kind kind) {
         BigDecimal value = amount == null ? BigDecimal.ZERO : amount;
         group.add(kind, value);
         Mutable branch = companyId == null ? null : branches.get(companyId);
         if (branch != null) {
             branch.add(kind, value);
+        } else {
+            headquarters.add(kind, value);
         }
     }
 

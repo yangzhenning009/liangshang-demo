@@ -2051,6 +2051,14 @@ class MasterDataDemoTest {
         assertEquals(0, new BigDecimal("500.00").compareTo(march.get(0).cost()));
         assertEquals(0, new BigDecimal("1100.00").compareTo(march.get(0).receivables()));
         assertEquals(0, new BigDecimal("250.00").compareTo(march.get(0).payables()));
+        MonthEndService.SummaryRow headquarters = march.stream()
+                .filter(row -> "总部本级".equals(row.label()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(0, new BigDecimal("500.00").compareTo(headquarters.revenue()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(headquarters.cost()));
+        assertEquals(0, new BigDecimal("300.00").compareTo(headquarters.receivables()));
+        assertEquals(0, new BigDecimal("50.00").compareTo(headquarters.payables()));
         MonthEndService.SummaryRow branchRow = march.stream()
                 .filter(row -> "梁山上海分公司".equals(row.label()))
                 .findFirst()
@@ -2059,6 +2067,23 @@ class MasterDataDemoTest {
         assertEquals(0, new BigDecimal("400.00").compareTo(branchRow.cost()));
         assertEquals(0, new BigDecimal("800.00").compareTo(branchRow.receivables()));
         assertEquals(0, new BigDecimal("200.00").compareTo(branchRow.payables()));
+        BigDecimal branchesRevenue = BigDecimal.ZERO;
+        BigDecimal branchesCost = BigDecimal.ZERO;
+        BigDecimal branchesReceivables = BigDecimal.ZERO;
+        BigDecimal branchesPayables = BigDecimal.ZERO;
+        for (MonthEndService.SummaryRow row : march) {
+            if ("集团".equals(row.label()) || "总部本级".equals(row.label())) {
+                continue;
+            }
+            branchesRevenue = branchesRevenue.add(row.revenue());
+            branchesCost = branchesCost.add(row.cost());
+            branchesReceivables = branchesReceivables.add(row.receivables());
+            branchesPayables = branchesPayables.add(row.payables());
+        }
+        assertEquals(0, march.get(0).revenue().compareTo(headquarters.revenue().add(branchesRevenue)));
+        assertEquals(0, march.get(0).cost().compareTo(headquarters.cost().add(branchesCost)));
+        assertEquals(0, march.get(0).receivables().compareTo(headquarters.receivables().add(branchesReceivables)));
+        assertEquals(0, march.get(0).payables().compareTo(headquarters.payables().add(branchesPayables)));
         assertTrue(march.stream().noneMatch(row -> "梁山总公司".equals(row.label())));
         List<MonthEndService.SummaryRow> april = monthEnd.summarize(2027, 12);
         assertEquals(0, BigDecimal.ZERO.compareTo(april.get(0).revenue()));
@@ -2069,6 +2094,7 @@ class MasterDataDemoTest {
         mvc.perform(get("/month-end").param("year", "2027").param("month", "11"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("集团")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("总部本级")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("梁山上海分公司")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("1500.00")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("1000.00")));
