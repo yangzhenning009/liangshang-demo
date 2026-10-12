@@ -601,6 +601,10 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("基础管理")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("采购")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("项目管理")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("工时")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("报销管理")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("财务管理")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("种子数据")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("条款、品项与阶段")));
     }
 
@@ -2263,6 +2267,31 @@ class MasterDataDemoTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("wp14")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("经营与财务")));
+    }
+
+    @Test
+    void versionListsShowSettlementAndOwnership() throws Exception {
+        seedRunner.run();
+        long supplierId = supplierRepository.findAll().stream()
+                .filter(supplier -> "SUP-W13-ZHU-HQ".equals(supplier.supplierCode))
+                .findFirst()
+                .orElseThrow()
+                .id;
+        mvc.perform(get("/suppliers/" + supplierId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("到期基准")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("发票确认日")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("账期天数")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(">30<")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("审核人")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("吴用")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("提交时间")));
+        long projectId = projectRepository.findByProjectCode("PJ-W13-06").get(0).id;
+        mvc.perform(get("/projects/" + projectId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("项目经理")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("东京留守司")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("LS-E-002 卢俊义")));
     }
 
     private void assertOperationsMonth(int year, int month) {

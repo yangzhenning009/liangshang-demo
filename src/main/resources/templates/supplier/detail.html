@@ -192,6 +192,15 @@
                     <th>版本</th>
                     <th>名称</th>
                     <th>准入</th>
+                    <th>提交时间</th>
+                    <th>审核人</th>
+                    <th>审核时间</th>
+                    <th>驳回原因</th>
+                    <th>准入依据</th>
+                    <th>结算币种</th>
+                    <th>到期基准</th>
+                    <th>账期天数</th>
+                    <th>每月固定日</th>
                     <th>合作</th>
                     <th>生效</th>
                     <th>结束</th>
@@ -200,12 +209,21 @@
                 </thead>
                 <tbody>
                 <tr th:if="${versions.isEmpty()}">
-                    <td colspan="7" class="empty">还没有版本。</td>
+                    <td colspan="16" class="empty">还没有版本。</td>
                 </tr>
                 <tr th:each="version : ${versions}">
                     <td th:text="${version.versionNumber}">1</td>
                     <td th:text="${version.supplierName}">名称</td>
                     <td th:text="${version.admissionStatus}">待提交</td>
+                    <td th:text="${@labels.when(version.admissionSubmittedAt)}">提交</td>
+                    <td th:text="${@labels.employee(employeeRows, version.admissionReviewedByEmployeeId)}">审核人</td>
+                    <td th:text="${@labels.when(version.admissionReviewedAt)}">审核时间</td>
+                    <td th:text="${@labels.dash(version.admissionRejectionReason)}">—</td>
+                    <td th:text="${@labels.document(sourceDocuments, version.admissionDocumentId)}">依据</td>
+                    <td th:text="${@labels.dash(version.defaultSettlementCurrency)}">CNY</td>
+                    <td th:text="${@labels.dash(version.defaultPaymentDueBasis)}">发票确认日</td>
+                    <td th:text="${@labels.number(version.defaultPaymentTermDays)}">30</td>
+                    <td th:text="${@labels.number(version.defaultPaymentDayOfMonth)}">—</td>
                     <td th:text="${version.cooperationStatus}">未启用</td>
                     <td th:text="${version.validFrom}">2026-01-01</td>
                     <td th:text="${version.validTo == null} ? '当前' : ${version.validTo}">当前</td>

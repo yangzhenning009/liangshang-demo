@@ -57,6 +57,7 @@ a:hover { color: var(--cinnabar); }
 .brand strong { display: block; font-family: var(--serif); font-size: 1.15rem; font-weight: 600; }
 .brand span { display: block; color: #c9d4cc; font-size: 0.78rem; }
 .nav { display: flex; flex-direction: column; gap: 0.25rem; }
+.nav-group { display: flex; flex-direction: column; gap: 0.25rem; }
 .nav a {
     color: #e7efe9;
     padding: 0.55rem 0.75rem;
@@ -160,7 +161,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid rgba(30, 74, 56, 
 @media (max-width: 860px) {
     .shell { grid-template-columns: 1fr; }
     .sidebar { position: static; height: auto; padding-bottom: 1rem; }
-    .nav { flex-direction: row; flex-wrap: wrap; }
+    .nav { flex-direction: column; }
+    .nav-group { width: 100%; }
     .nav-label { width: 100%; }
     .side-note { display: none; }
     .main { padding: 1rem; }

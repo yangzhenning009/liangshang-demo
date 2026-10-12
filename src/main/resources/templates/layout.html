@@ -21,37 +21,49 @@
         </div>
         <nav class="nav">
             <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">首页</a>
-            <span class="nav-label">基础管理</span>
-            <a th:href="@{/legal-persons}" th:classappend="${activeNav == 'legal-persons'} ? 'active'">法人</a>
-            <a th:href="@{/companies}" th:classappend="${activeNav == 'companies'} ? 'active'">公司</a>
-            <a th:href="@{/persons}" th:classappend="${activeNav == 'persons'} ? 'active'">自然人</a>
-            <a th:href="@{/employees}" th:classappend="${activeNav == 'employees'} ? 'active'">员工</a>
-            <a th:href="@{/departments}" th:classappend="${activeNav == 'departments'} ? 'active'">部门</a>
-            <a th:href="@{/source-documents}" th:classappend="${activeNav == 'documents'} ? 'active'">来源材料</a>
             <a th:href="@{/seed}" th:classappend="${activeNav == 'seed'} ? 'active'">种子数据</a>
-            <span class="nav-label">采购</span>
-            <a th:href="@{/suppliers}" th:classappend="${activeNav == 'suppliers'} ? 'active'">供应商</a>
-            <span class="nav-label">项目管理</span>
-            <a th:href="@{/projects}" th:classappend="${activeNav == 'projects'} ? 'active'">项目</a>
-            <a th:href="@{/contracts}" th:classappend="${activeNav == 'contracts'} ? 'active'">合同</a>
-            <span class="nav-label">工时</span>
-            <a th:href="@{/work-logs}" th:classappend="${activeNav == 'work-logs'} ? 'active'">工时填报</a>
-            <a th:href="@{/work-logs/approvals}" th:classappend="${activeNav == 'work-approvals'} ? 'active'">工时审批</a>
-            <a th:href="@{/labor-cost-rates}" th:classappend="${activeNav == 'labor-rates'} ? 'active'">成本率</a>
-            <span class="nav-label">报销管理</span>
-            <a th:href="@{/costs}" th:classappend="${activeNav == 'costs'} ? 'active'">费用</a>
-            <a th:href="@{/expense-claims}" th:classappend="${activeNav == 'claims'} ? 'active'">报销</a>
-            <span class="nav-label">财务管理</span>
-            <a th:href="@{/invoices}" th:classappend="${activeNav == 'invoices'} ? 'active'">发票</a>
-            <a th:href="@{/receivables}" th:classappend="${activeNav == 'receivables'} ? 'active'">应收</a>
-            <a th:href="@{/payables}" th:classappend="${activeNav == 'payables'} ? 'active'">应付</a>
-            <a th:href="@{/payments}" th:classappend="${activeNav == 'payments'} ? 'active'">收付款</a>
-            <a th:href="@{/ledgers}" th:classappend="${activeNav == 'ledgers'} ? 'active'">账簿</a>
-            <a th:href="@{/accounts}" th:classappend="${activeNav == 'accounts'} ? 'active'">科目</a>
-            <a th:href="@{/accounting-periods}" th:classappend="${activeNav == 'periods'} ? 'active'">期间</a>
-            <a th:href="@{/journal-entries}" th:classappend="${activeNav == 'journals'} ? 'active'">凭证</a>
-            <a th:href="@{/revenue-recognitions}" th:classappend="${activeNav == 'revenue'} ? 'active'">收入确认</a>
-            <a th:href="@{/month-end}" th:classappend="${activeNav == 'month-end'} ? 'active'">月度核算</a>
+            <div class="nav-group">
+                <span class="nav-label">基础管理</span>
+                <a th:href="@{/legal-persons}" th:classappend="${activeNav == 'legal-persons'} ? 'active'">法人</a>
+                <a th:href="@{/companies}" th:classappend="${activeNav == 'companies'} ? 'active'">公司</a>
+                <a th:href="@{/persons}" th:classappend="${activeNav == 'persons'} ? 'active'">自然人</a>
+                <a th:href="@{/employees}" th:classappend="${activeNav == 'employees'} ? 'active'">员工</a>
+                <a th:href="@{/departments}" th:classappend="${activeNav == 'departments'} ? 'active'">部门</a>
+                <a th:href="@{/source-documents}" th:classappend="${activeNav == 'documents'} ? 'active'">来源材料</a>
+            </div>
+            <div class="nav-group">
+                <span class="nav-label">采购</span>
+                <a th:href="@{/suppliers}" th:classappend="${activeNav == 'suppliers'} ? 'active'">供应商</a>
+            </div>
+            <div class="nav-group">
+                <span class="nav-label">项目管理</span>
+                <a th:href="@{/projects}" th:classappend="${activeNav == 'projects'} ? 'active'">项目</a>
+                <a th:href="@{/contracts}" th:classappend="${activeNav == 'contracts'} ? 'active'">合同</a>
+            </div>
+            <div class="nav-group">
+                <span class="nav-label">工时</span>
+                <a th:href="@{/work-logs}" th:classappend="${activeNav == 'work-logs'} ? 'active'">工时填报</a>
+                <a th:href="@{/work-logs/approvals}" th:classappend="${activeNav == 'work-approvals'} ? 'active'">工时审批</a>
+                <a th:href="@{/labor-cost-rates}" th:classappend="${activeNav == 'labor-rates'} ? 'active'">成本率</a>
+            </div>
+            <div class="nav-group">
+                <span class="nav-label">报销管理</span>
+                <a th:href="@{/costs}" th:classappend="${activeNav == 'costs'} ? 'active'">费用</a>
+                <a th:href="@{/expense-claims}" th:classappend="${activeNav == 'claims'} ? 'active'">报销</a>
+            </div>
+            <div class="nav-group">
+                <span class="nav-label">财务管理</span>
+                <a th:href="@{/invoices}" th:classappend="${activeNav == 'invoices'} ? 'active'">发票</a>
+                <a th:href="@{/receivables}" th:classappend="${activeNav == 'receivables'} ? 'active'">应收</a>
+                <a th:href="@{/payables}" th:classappend="${activeNav == 'payables'} ? 'active'">应付</a>
+                <a th:href="@{/payments}" th:classappend="${activeNav == 'payments'} ? 'active'">收付款</a>
+                <a th:href="@{/ledgers}" th:classappend="${activeNav == 'ledgers'} ? 'active'">账簿</a>
+                <a th:href="@{/accounts}" th:classappend="${activeNav == 'accounts'} ? 'active'">科目</a>
+                <a th:href="@{/accounting-periods}" th:classappend="${activeNav == 'periods'} ? 'active'">期间</a>
+                <a th:href="@{/journal-entries}" th:classappend="${activeNav == 'journals'} ? 'active'">凭证</a>
+                <a th:href="@{/revenue-recognitions}" th:classappend="${activeNav == 'revenue'} ? 'active'">收入确认</a>
+                <a th:href="@{/month-end}" th:classappend="${activeNav == 'month-end'} ? 'active'">月度核算</a>
+            </div>
         </nav>
         <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
     </aside>

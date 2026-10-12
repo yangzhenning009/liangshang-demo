@@ -279,6 +279,9 @@
                 <tr>
                     <th>版本</th>
                     <th>名称</th>
+                    <th>客户</th>
+                    <th>管理公司</th>
+                    <th>项目经理</th>
                     <th>类型</th>
                     <th>计划开始</th>
                     <th>计划结束</th>
@@ -288,11 +291,14 @@
                 </thead>
                 <tbody>
                 <tr th:if="${versions.isEmpty()}">
-                    <td colspan="7" class="empty">还没有版本。</td>
+                    <td colspan="10" class="empty">还没有版本。</td>
                 </tr>
                 <tr th:each="version : ${versions}">
                     <td th:text="${version.versionNumber}">1</td>
                     <td th:text="${version.name}">名称</td>
+                    <td th:text="${@labels.customer(companies, legalPersons, persons, version.customerCompanyId, version.customerLegalPersonId, version.customerPersonId)}">客户</td>
+                    <td th:text="${@labels.company(companies, version.ownerCompanyId)}">管理公司</td>
+                    <td th:text="${@labels.employee(employeeRows, version.projectManagerEmployeeId)}">项目经理</td>
                     <td th:text="${version.projectType}">类型</td>
                     <td th:text="${version.plannedStartAt}">开始</td>
                     <td th:text="${version.plannedEndAt}">结束</td>
