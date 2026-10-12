@@ -1753,6 +1753,63 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("未结")));
     }
 
+    @Test
+    void paymentRejectsCombinedAllocationsOverOutstanding() {
+        long seller = companyForOrg("CAP-SELL", "核销卖方");
+        long buyer = companyForOrg("CAP-BUY", "核销买方");
+        long clerk = employee("花荣核销", "E-CAP");
+        SourceDocumentForm document = new SourceDocumentForm();
+        document.setDocumentType("合同");
+        document.setDocumentNumber("DOC-CAP");
+        document.setIssuerCompanyId(seller);
+        document.setStatus("有效");
+        long documentId = sourceDocuments.save(document);
+        ReceivableForm receivable = confirmedReceivable("AR-CAP", seller, buyer, clerk, documentId);
+        receivable.setReceivableAmount(new BigDecimal("60000"));
+        long receivableId = funds.saveReceivable(receivable);
+
+        PaymentForm overOutstanding = receipt(buyer, seller, null, null, "PAY-CAP-OVER", "80000", clerk, receivableId, null);
+        overOutstanding.getAllocations().get(0).setSettlementAmount(new BigDecimal("40000"));
+        PaymentForm.AllocationRow second = new PaymentForm.AllocationRow();
+        second.setReceivableItemId(receivableId);
+        second.setSettlementAmount(new BigDecimal("40000"));
+        second.setCurrency("CNY");
+        second.setSettlementAction("apply");
+        second.setAllocatedAt(LocalDateTime.of(2026, 3, 4, 10, 0));
+        second.setAllocatedByEmployeeId(clerk);
+        second.setStatus("已确认");
+        overOutstanding.getAllocations().add(second);
+        assertTrue(messageOf(() -> funds.savePayment(overOutstanding)).contains("未结"));
+
+        PaymentForm overPayment = receipt(buyer, seller, null, null, "PAY-CAP-AMT", "50000", clerk, receivableId, null);
+        overPayment.getAllocations().get(0).setSettlementAmount(new BigDecimal("30000"));
+        PaymentForm.AllocationRow third = new PaymentForm.AllocationRow();
+        third.setReceivableItemId(receivableId);
+        third.setSettlementAmount(new BigDecimal("30000"));
+        third.setCurrency("CNY");
+        third.setSettlementAction("apply");
+        third.setAllocatedAt(LocalDateTime.of(2026, 3, 4, 10, 0));
+        third.setAllocatedByEmployeeId(clerk);
+        third.setStatus("已确认");
+        overPayment.getAllocations().add(third);
+        assertTrue(messageOf(() -> funds.savePayment(overPayment)).contains("收付本金"));
+
+        PaymentForm split = receipt(buyer, seller, null, null, "PAY-CAP-OK", "60000", clerk, receivableId, null);
+        split.getAllocations().get(0).setSettlementAmount(new BigDecimal("30000"));
+        PaymentForm.AllocationRow fourth = new PaymentForm.AllocationRow();
+        fourth.setReceivableItemId(receivableId);
+        fourth.setSettlementAmount(new BigDecimal("30000"));
+        fourth.setCurrency("CNY");
+        fourth.setSettlementAction("apply");
+        fourth.setAllocatedAt(LocalDateTime.of(2026, 3, 4, 10, 0));
+        fourth.setAllocatedByEmployeeId(clerk);
+        fourth.setStatus("已确认");
+        split.getAllocations().add(fourth);
+        long paymentId = funds.savePayment(split);
+        assertEquals(0, BigDecimal.ZERO.compareTo(funds.outstandingReceivable(receivableId)));
+        funds.savePayment(funds.paymentForm(paymentId));
+    }
+
     private ReceivableForm confirmedReceivable(String number, long creditor, long debtor, long clerk, long documentId) {
         ReceivableForm form = new ReceivableForm();
         form.setReceivableNumber(number);

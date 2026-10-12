@@ -41,7 +41,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -746,6 +748,7 @@ public class FundsService {
                 errors.add("allocations", "同一侧核销不能超过本次收付本金");
             }
         }
+        checkCombinedOutstanding(form, rows, errors);
         if (stored != null) {
             for (PaymentAllocation existing : allocations.findByPaymentIdOrderByIdAsc(stored.id)) {
                 if (!Codes.PAYMENT_CONFIRMED.equals(existing.status)) {
@@ -757,6 +760,67 @@ public class FundsService {
                 }
             }
         }
+    }
+
+    private void checkCombinedOutstanding(PaymentForm form, List<AllocationRow> rows, FieldErrors errors) {
+        Map<Long, BigDecimal> receivableNet = new LinkedHashMap<>();
+        Map<Long, BigDecimal> payableNet = new LinkedHashMap<>();
+        for (AllocationRow row : rows) {
+            if (!Codes.PAYMENT_CONFIRMED.equals(row.getStatus()) || row.getSettlementAmount() == null) {
+                continue;
+            }
+            BigDecimal signed = Codes.SETTLEMENT_REVERSE.equals(row.getSettlementAction())
+                    ? row.getSettlementAmount().negate() : row.getSettlementAmount();
+            if (row.getReceivableItemId() != null) {
+                receivableNet.merge(row.getReceivableItemId(), signed, BigDecimal::add);
+            } else if (row.getPayableItemId() != null) {
+                payableNet.merge(row.getPayableItemId(), signed, BigDecimal::add);
+            }
+        }
+        for (Map.Entry<Long, BigDecimal> entry : receivableNet.entrySet()) {
+            BigDecimal room = outstandingReceivable(entry.getKey());
+            if (room == null) {
+                continue;
+            }
+            room = room.add(postedNet(form.getId(), entry.getKey(), true));
+            if (entry.getValue().compareTo(room) > 0) {
+                errors.add("allocations", "同一应收的核销合计超过未结余额");
+            }
+        }
+        for (Map.Entry<Long, BigDecimal> entry : payableNet.entrySet()) {
+            BigDecimal room = outstandingPayable(entry.getKey());
+            if (room == null) {
+                continue;
+            }
+            room = room.add(postedNet(form.getId(), entry.getKey(), false));
+            if (entry.getValue().compareTo(room) > 0) {
+                errors.add("allocations", "同一应付的核销合计超过未结余额");
+            }
+        }
+    }
+
+    private BigDecimal postedNet(Long paymentId, Long itemId, boolean receivable) {
+        if (paymentId == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal net = BigDecimal.ZERO;
+        for (PaymentAllocation allocation : allocations.findByPaymentIdOrderByIdAsc(paymentId)) {
+            if (!Codes.PAYMENT_CONFIRMED.equals(allocation.status)) {
+                continue;
+            }
+            boolean sameItem = receivable
+                    ? itemId.equals(allocation.receivableItemId)
+                    : itemId.equals(allocation.payableItemId);
+            if (!sameItem) {
+                continue;
+            }
+            if (Codes.SETTLEMENT_APPLY.equals(allocation.settlementAction)) {
+                net = net.add(allocation.settlementAmount);
+            } else if (Codes.SETTLEMENT_REVERSE.equals(allocation.settlementAction)) {
+                net = net.subtract(allocation.settlementAmount);
+            }
+        }
+        return net;
     }
 
     private void checkReceivable(PaymentForm form, AllocationRow row, FieldErrors errors, String prefix) {
@@ -784,12 +848,6 @@ public class FundsService {
                 errors.add("paymentForCompanyId", "代付须把被代付对象记成这笔应收的债务人");
             }
         }
-        if (Codes.SETTLEMENT_APPLY.equals(row.getSettlementAction())) {
-            BigDecimal room = outstandingReceivable(item.id);
-            if (room != null && row.getSettlementAmount() != null && row.getSettlementAmount().compareTo(room) > 0) {
-                errors.add(prefix + ".settlementAmount", "核销超过应收未结余额");
-            }
-        }
     }
 
     private void checkPayable(PaymentForm form, AllocationRow row, FieldErrors errors, String prefix) {
@@ -807,12 +865,6 @@ public class FundsService {
                 item.debtorCompanyId, item.debtorLegalPersonId, null);
         if (!payerIsDebtor && !payingForDebtor && Codes.SETTLEMENT_APPLY.equals(row.getSettlementAction())) {
             errors.add("payerCompanyId", "付款方须是应付的债务人，或标明代其付款");
-        }
-        if (Codes.SETTLEMENT_APPLY.equals(row.getSettlementAction())) {
-            BigDecimal room = outstandingPayable(item.id);
-            if (room != null && row.getSettlementAmount() != null && row.getSettlementAmount().compareTo(room) > 0) {
-                errors.add(prefix + ".settlementAmount", "核销超过应付未结余额");
-            }
         }
     }
 
