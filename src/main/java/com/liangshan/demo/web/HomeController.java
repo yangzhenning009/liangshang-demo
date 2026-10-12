@@ -7,6 +7,7 @@ import com.liangshan.demo.repository.LegalPersonRepository;
 import com.liangshan.demo.repository.PersonRepository;
 import com.liangshan.demo.repository.SourceDocumentRepository;
 import com.liangshan.demo.repository.ContractRepository;
+import com.liangshan.demo.repository.CostOccurrenceRepository;
 import com.liangshan.demo.repository.WorkLogRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.SupplierRepository;
@@ -28,6 +29,7 @@ public class HomeController {
     private final ProjectRepository projectRepository;
     private final ContractRepository contractRepository;
     private final WorkLogRepository workLogs;
+    private final CostOccurrenceRepository costs;
 
     public HomeController(
             LegalPersonRepository legalPersons,
@@ -39,7 +41,8 @@ public class HomeController {
             SupplierRepository suppliers,
             ProjectRepository projectRepository,
             ContractRepository contractRepository,
-            WorkLogRepository workLogs) {
+            WorkLogRepository workLogs,
+            CostOccurrenceRepository costs) {
         this.legalPersons = legalPersons;
         this.companies = companies;
         this.persons = persons;
@@ -50,6 +53,7 @@ public class HomeController {
         this.projectRepository = projectRepository;
         this.contractRepository = contractRepository;
         this.workLogs = workLogs;
+        this.costs = costs;
     }
 
     @ModelAttribute("activeNav")
@@ -69,6 +73,7 @@ public class HomeController {
         model.addAttribute("projectCount", projectRepository.count());
         model.addAttribute("contractCount", contractRepository.count());
         model.addAttribute("workLogCount", workLogs.count());
+        model.addAttribute("costCount", costs.count());
         return "home";
     }
 }

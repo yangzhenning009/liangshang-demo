@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>费用 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>费用</h1>
+            <p class="lede">一笔支出只记一次成本。分配合计须等于该成本金额。报销和付款不再另记成本。</p>
+        </div>
+        <a class="btn" th:href="@{/costs/new}">登记费用</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>类型</th>
+                    <th>口径</th>
+                    <th>成本</th>
+                    <th>已分配</th>
+                    <th>垫付</th>
+                    <th>审批</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="9" class="empty">还没有费用。云服务、体检和已批工时的人工成本都记在这里。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.costNumber}">CLOUD-1</td>
+                    <td th:text="${item.costType}">云服务</td>
+                    <td th:text="${item.costBasis}">实际费用</td>
+                    <td th:text="${item.costAmount + ' ' + item.currency}">10000</td>
+                    <td th:text="${item.allocatedAmount + ' ' + item.currency}">10000</td>
+                    <td th:text="${item.employeeAdvancedAmount == null ? '无' : item.employeeAdvancedAmount + ' ' + item.currency}">500</td>
+                    <td><span class="badge" th:text="${item.approvalStatus}">草稿</span></td>
+                    <td th:text="${item.status}">有效</td>
+                    <td class="actions"><a th:href="@{/costs/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -5,11 +5,11 @@ import com.liangshan.demo.domain.Employee;
 import com.liangshan.demo.domain.EmployeeEmployment;
 import com.liangshan.demo.domain.LaborCostRate;
 import com.liangshan.demo.domain.Person;
+import com.liangshan.demo.repository.CostOccurrenceRepository;
 import com.liangshan.demo.repository.EmployeeEmploymentRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.LaborCostRateRepository;
 import com.liangshan.demo.repository.PersonRepository;
-import com.liangshan.demo.repository.WorkLogRepository;
 import com.liangshan.demo.web.NotFoundException;
 import com.liangshan.demo.web.form.LaborCostRateForm;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ import java.util.List;
 public class LaborCostRateService {
 
     private final LaborCostRateRepository rates;
-    private final WorkLogRepository logs;
+    private final CostOccurrenceRepository costs;
     private final EmployeeEmploymentRepository employments;
     private final EmployeeRepository employees;
     private final PersonRepository persons;
@@ -146,9 +146,9 @@ public class LaborCostRateService {
                 errors.add("id", "成本率不存在");
             }
         }
-        if (stored != null && logs.existsByLaborCostRateId(stored.id)
+        if (stored != null && costs.existsByLaborCostRateId(stored.id)
                 && (!Cmp.eq(stored.hourlyCostAmount, form.getHourlyCostAmount()) || !Cmp.eq(stored.currency, form.getCurrency()))) {
-            errors.add("hourlyCostAmount", "该成本率已被工时引用，单价请另记一个版本");
+            errors.add("hourlyCostAmount", "该成本率已被人工成本引用，单价请另记一个版本");
         }
         if (form.getRateVersionNumber() != null && form.getRateVersionNumber() <= 0) {
             errors.add("rateVersionNumber", "版本号须大于 0");
@@ -213,8 +213,8 @@ public class LaborCostRateService {
     @Transactional
     public void delete(Long id) {
         get(id);
-        if (logs.existsByLaborCostRateId(id)) {
-            throw new FieldErrorsException(java.util.Map.of("*", "该成本率已被工时引用，不能删除"));
+        if (costs.existsByLaborCostRateId(id)) {
+            throw new FieldErrorsException(java.util.Map.of("*", "该成本率已被人工成本引用，不能删除"));
         }
         rates.deleteById(id);
     }

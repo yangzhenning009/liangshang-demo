@@ -17,6 +17,7 @@ import com.liangshan.demo.repository.EmployeeEmploymentRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.PersonRepository;
 import com.liangshan.demo.repository.ProjectRepository;
+import com.liangshan.demo.service.CostOccurrenceService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.WorkLogService;
 import com.liangshan.demo.web.form.WorkLogDecisionForm;
@@ -48,6 +49,7 @@ public class WorkLogController {
     private final ProjectRepository projects;
     private final ContractStageRepository stages;
     private final ContractRepository contracts;
+    private final CostOccurrenceService costs;
 
     public WorkLogController(
             WorkLogService logs,
@@ -58,7 +60,8 @@ public class WorkLogController {
             DepartmentRepository departments,
             ProjectRepository projects,
             ContractStageRepository stages,
-            ContractRepository contracts) {
+            ContractRepository contracts,
+            CostOccurrenceService costs) {
         this.logs = logs;
         this.employees = employees;
         this.persons = persons;
@@ -68,6 +71,7 @@ public class WorkLogController {
         this.projects = projects;
         this.stages = stages;
         this.contracts = contracts;
+        this.costs = costs;
     }
 
     public record Choice(Long id, String label) {
@@ -165,6 +169,7 @@ public class WorkLogController {
         var stored = logs.get(id);
         model.addAttribute("form", logs.form(id));
         model.addAttribute("stored", stored);
+        model.addAttribute("laborCost", costs.findEffectiveLabor(id));
         model.addAttribute("locked", Codes.WORK_APPROVED.equals(stored.approvalStatus)
                 || Codes.WORK_PENDING.equals(stored.approvalStatus));
         return "work-log/form";
@@ -229,6 +234,7 @@ public class WorkLogController {
 
     private void prepareForm(Model model) {
         model.addAttribute("stored", null);
+        model.addAttribute("laborCost", null);
         model.addAttribute("locked", false);
     }
 }

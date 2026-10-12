@@ -3,6 +3,7 @@ package com.liangshan.demo.service;
 import com.liangshan.demo.domain.Codes;
 import com.liangshan.demo.domain.Contract;
 import com.liangshan.demo.domain.ContractStage;
+import com.liangshan.demo.domain.CostOccurrence;
 import com.liangshan.demo.domain.Employee;
 import com.liangshan.demo.domain.EmployeeDepartmentAssignment;
 import com.liangshan.demo.domain.EmployeeEmployment;
@@ -33,7 +34,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -57,6 +57,7 @@ public class WorkLogService {
     private final ProjectContractRepository projectContracts;
     private final ContractStageRepository stages;
     private final ContractRepository contracts;
+    private final CostOccurrenceService costOccurrences;
 
     public record Row(
             Long id,
@@ -127,10 +128,6 @@ public class WorkLogService {
         log.approvedByEmployeeId = null;
         log.approvedAt = null;
         log.approvalComment = null;
-        log.laborCostRateId = null;
-        log.hourlyCostAmountSnapshot = null;
-        log.laborCostAmount = null;
-        log.laborCostCurrency = null;
         if (form.isSubmitForApproval()) {
             log.approvalStatus = Codes.WORK_PENDING;
             log.submittedAt = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
@@ -166,16 +163,13 @@ public class WorkLogService {
         log.approvedByEmployeeId = decision.getApprovedByEmployeeId();
         log.approvedAt = decision.getApprovedAt().truncatedTo(ChronoUnit.MINUTES);
         log.approvalComment = Text.blankToNull(decision.getApprovalComment());
-        log.laborCostRateId = rate.id;
-        log.hourlyCostAmountSnapshot = plain(rate.hourlyCostAmount);
-        log.laborCostCurrency = rate.currency;
-        log.laborCostAmount = plain(log.hours.multiply(rate.hourlyCostAmount).setScale(2, RoundingMode.HALF_UP));
         logs.save(log);
         if (log.supersedesWorkLogId != null) {
             WorkLog prior = logs.findById(log.supersedesWorkLogId).orElseThrow();
             prior.recordStatus = Codes.WORK_RECORD_SUPERSEDED;
             logs.save(prior);
         }
+        costOccurrences.recordApprovedLabor(log, rate);
     }
 
     @Transactional
@@ -192,10 +186,6 @@ public class WorkLogService {
         log.approvedByEmployeeId = decision.getApprovedByEmployeeId();
         log.approvedAt = decision.getApprovedAt().truncatedTo(ChronoUnit.MINUTES);
         log.approvalComment = Text.blankToNull(decision.getApprovalComment());
-        log.laborCostRateId = null;
-        log.hourlyCostAmountSnapshot = null;
-        log.laborCostAmount = null;
-        log.laborCostCurrency = null;
         logs.save(log);
     }
 
@@ -415,6 +405,7 @@ public class WorkLogService {
     }
 
     private Row row(WorkLog log) {
+        CostOccurrence cost = costOccurrences.findEffectiveLabor(log.id);
         return new Row(
                 log.id,
                 employeeLabel(log.employeeId),
@@ -424,10 +415,10 @@ public class WorkLogService {
                 log.workDescription,
                 log.approvalStatus,
                 log.recordStatus,
-                plain(log.hourlyCostAmountSnapshot),
-                plain(log.laborCostAmount),
-                log.laborCostCurrency,
-                log.laborCostRateId,
+                cost == null ? null : plain(cost.hourlyCostAmountSnapshot),
+                cost == null ? null : plain(cost.costAmount),
+                cost == null ? null : cost.currency,
+                cost == null ? null : cost.laborCostRateId,
                 log.billable);
     }
 

@@ -15,8 +15,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 工时记录。批准时把当时的成本率主键和单价抄到本行，之后改成本率不回写这笔金额。
- * 关联 ID 是普通 Long，不建外键。成本归集对象在后续费用包里再记。
+ * 工时记录。批准后按当时的成本率生成 cost_occurrence，单价快照记在成本上。
+ * 关联 ID 是普通 Long，不建外键。
  */
 @Entity
 @Table(name = "work_log", indexes = {
@@ -26,8 +26,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_work_log_project", columnList = "project_id"),
         @Index(name = "idx_work_log_stage", columnList = "contract_stage_id"),
         @Index(name = "idx_work_log_approver", columnList = "approved_by_employee_id"),
-        @Index(name = "idx_work_log_supersedes", columnList = "supersedes_work_log_id"),
-        @Index(name = "idx_work_log_rate", columnList = "labor_cost_rate_id")
+        @Index(name = "idx_work_log_supersedes", columnList = "supersedes_work_log_id")
 })
 @Getter
 public class WorkLog extends Auditable {
@@ -84,16 +83,4 @@ public class WorkLog extends Auditable {
 
     @Column(name = "supersedes_work_log_id")
     public Long supersedesWorkLogId;
-
-    @Column(name = "labor_cost_rate_id")
-    public Long laborCostRateId;
-
-    @Column(name = "hourly_cost_amount_snapshot", precision = 18, scale = 4)
-    public BigDecimal hourlyCostAmountSnapshot;
-
-    @Column(name = "labor_cost_amount", precision = 18, scale = 2)
-    public BigDecimal laborCostAmount;
-
-    @Column(name = "labor_cost_currency", length = 8)
-    public String laborCostCurrency;
 }

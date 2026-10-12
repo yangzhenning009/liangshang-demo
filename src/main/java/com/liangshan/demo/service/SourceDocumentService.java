@@ -50,6 +50,7 @@ public class SourceDocumentService {
     private final ContractLinkGuard contractLinks;
     private final FulfillmentLinkGuard fulfillmentLinks;
     private final WorkLogLinkGuard workLogLinks;
+    private final CostLinkGuard costLinks;
 
     public record Option(Long id, String label) {
     }
@@ -198,7 +199,8 @@ public class SourceDocumentService {
                 || projectLinks.documentUsed(id)
                 || contractLinks.documentUsed(id)
                 || fulfillmentLinks.documentUsed(id)
-                || workLogLinks.documentUsed(id);
+                || workLogLinks.documentUsed(id)
+                || costLinks.documentUsed(id);
     }
 
     private void normalize(SourceDocumentForm form) {

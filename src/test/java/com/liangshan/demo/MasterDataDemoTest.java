@@ -18,6 +18,7 @@ import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
+import com.liangshan.demo.domain.CostOccurrence;
 import com.liangshan.demo.domain.LaborCostRate;
 import com.liangshan.demo.domain.WorkLog;
 import com.liangshan.demo.domain.AcceptanceEvent;
@@ -30,6 +31,11 @@ import com.liangshan.demo.domain.ContractStageTermVersion;
 import com.liangshan.demo.domain.ContractTermVersion;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
 import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.domain.PayableItem;
+import com.liangshan.demo.repository.CostAllocationRepository;
+import com.liangshan.demo.repository.CostOccurrenceRepository;
+import com.liangshan.demo.repository.PayableItemRepository;
+import com.liangshan.demo.repository.PaymentAllocationRepository;
 import com.liangshan.demo.repository.LaborCostRateRepository;
 import com.liangshan.demo.repository.WorkLogRepository;
 import com.liangshan.demo.repository.AcceptanceEventRepository;
@@ -45,6 +51,8 @@ import com.liangshan.demo.repository.ContractTermVersionRepository;
 import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.ProjectVersionRepository;
+import com.liangshan.demo.service.CostOccurrenceService;
+import com.liangshan.demo.service.ExpenseClaimService;
 import com.liangshan.demo.service.LaborCostRateService;
 import com.liangshan.demo.service.WorkLogService;
 import com.liangshan.demo.service.ContractService;
@@ -63,6 +71,8 @@ import com.liangshan.demo.web.form.SourceDocumentForm;
 import com.liangshan.demo.web.form.SupplierDetailForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
+import com.liangshan.demo.web.form.CostForm;
+import com.liangshan.demo.web.form.ExpenseClaimForm;
 import com.liangshan.demo.web.form.LaborCostRateForm;
 import com.liangshan.demo.web.form.WorkLogDecisionForm;
 import com.liangshan.demo.web.form.WorkLogForm;
@@ -206,6 +216,18 @@ class MasterDataDemoTest {
     private LaborCostRateService laborCostRates;
     @Autowired
     private LaborCostRateRepository laborCostRateRepository;
+    @Autowired
+    private CostOccurrenceService costOccurrences;
+    @Autowired
+    private CostOccurrenceRepository costRepository;
+    @Autowired
+    private CostAllocationRepository costAllocations;
+    @Autowired
+    private ExpenseClaimService expenseClaims;
+    @Autowired
+    private PayableItemRepository payables;
+    @Autowired
+    private PaymentAllocationRepository paymentAllocations;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -275,7 +297,15 @@ class MasterDataDemoTest {
                 "acceptance_event",
                 "acceptance_line",
                 "work_log",
-                "labor_cost_rate")));
+                "labor_cost_rate",
+                "cost_occurrence",
+                "cost_invoice_line",
+                "cost_allocation",
+                "expense_claim",
+                "expense_claim_line",
+                "payable_item",
+                "payment",
+                "payment_allocation")));
         assertEquals("integer", String.valueOf(column("contract_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals("integer", String.valueOf(column("contract_stage_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("contract", "contract_number").get("notnull")).intValue());
@@ -346,9 +376,30 @@ class MasterDataDemoTest {
         assertEquals(0, ((Number) column("work_log", "contract_stage_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("work_log", "approved_by_employee_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("work_log", "supersedes_work_log_id").get("notnull")).intValue());
-        assertEquals(0, ((Number) column("work_log", "labor_cost_rate_id").get("notnull")).intValue());
-        assertEquals(0, ((Number) column("work_log", "hourly_cost_amount_snapshot").get("notnull")).intValue());
-        assertEquals(0, ((Number) column("work_log", "labor_cost_amount").get("notnull")).intValue());
+        assertFalse(jdbc.queryForList("pragma table_info('work_log')").stream()
+                .anyMatch(row -> "labor_cost_amount".equalsIgnoreCase(String.valueOf(row.get("name")))));
+        assertEquals("integer", String.valueOf(column("cost_occurrence", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("payable_item", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("payment", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(1, ((Number) column("cost_occurrence", "cost_amount").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("cost_occurrence", "cost_number").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "bearing_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "bearing_legal_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "supplier_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "work_log_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "labor_cost_rate_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "hourly_cost_amount_snapshot").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_occurrence", "employee_advanced_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("cost_allocation", "contract_stage_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("cost_allocation", "project_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("expense_claim", "claim_type").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("expense_claim_line", "approved_reimbursement_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payable_item", "creditor_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payable_item", "supplier_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payable_item", "expense_claim_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment", "payee_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment_allocation", "payable_item_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("cost_invoice_line", "invoice_line_id").get("notnull")).intValue());
         assertEquals(1, ((Number) column("labor_cost_rate", "employment_id").get("notnull")).intValue());
         assertEquals(1, ((Number) column("labor_cost_rate", "hourly_cost_amount").get("notnull")).intValue());
         assertEquals(0, ((Number) column("labor_cost_rate", "basis_document_id").get("notnull")).intValue());
@@ -1251,14 +1302,18 @@ class MasterDataDemoTest {
         workLogs.approve(logId, decision(leaderId, "同意"));
 
         WorkLog approved = workLogRepository.findById(logId).orElseThrow();
-        assertEquals(0, new BigDecimal("1600.00").compareTo(approved.laborCostAmount));
-        assertEquals(0, new BigDecimal("200").compareTo(approved.hourlyCostAmountSnapshot));
-        assertEquals(rateId, approved.laborCostRateId);
-        assertEquals("CNY", approved.laborCostCurrency);
         assertEquals("通过", approved.approvalStatus);
         assertEquals("有效", approved.recordStatus);
         assertEquals(leaderId, approved.approvedByEmployeeId);
         assertNotNull(approved.approvedAt);
+        CostOccurrence posted = costOccurrences.findEffectiveLabor(logId);
+        assertNotNull(posted);
+        assertEquals(0, new BigDecimal("1600.00").compareTo(posted.costAmount));
+        assertEquals(0, new BigDecimal("200").compareTo(posted.hourlyCostAmountSnapshot));
+        assertEquals(rateId, posted.laborCostRateId);
+        assertEquals("CNY", posted.currency);
+        assertEquals(0, new BigDecimal("8").compareTo(posted.costedHours));
+        assertEquals(logId, posted.workLogId);
 
         mvc.perform(get("/work-logs"))
                 .andExpect(status().isOk())
@@ -1276,13 +1331,13 @@ class MasterDataDemoTest {
         LaborCostRate changed = laborCostRateRepository.findById(rateId).orElseThrow();
         changed.hourlyCostAmount = new BigDecimal("300");
         laborCostRateRepository.save(changed);
-        WorkLog afterPriceEdit = workLogRepository.findById(logId).orElseThrow();
-        assertEquals(0, new BigDecimal("1600.00").compareTo(afterPriceEdit.laborCostAmount));
+        CostOccurrence afterPriceEdit = costRepository.findById(posted.id).orElseThrow();
+        assertEquals(0, new BigDecimal("1600.00").compareTo(afterPriceEdit.costAmount));
         assertEquals(0, new BigDecimal("200").compareTo(afterPriceEdit.hourlyCostAmountSnapshot));
 
         laborCostRates.save(rate(employmentId, "300", 2, LocalDate.now().plusDays(1), leaderId));
-        WorkLog afterNewVersion = workLogRepository.findById(logId).orElseThrow();
-        assertEquals(0, new BigDecimal("1600.00").compareTo(afterNewVersion.laborCostAmount));
+        CostOccurrence afterNewVersion = costRepository.findById(posted.id).orElseThrow();
+        assertEquals(0, new BigDecimal("1600.00").compareTo(afterNewVersion.costAmount));
         assertEquals(0, new BigDecimal("200").compareTo(afterNewVersion.hourlyCostAmountSnapshot));
         assertEquals(rateId, afterNewVersion.laborCostRateId);
 
@@ -1299,12 +1354,129 @@ class MasterDataDemoTest {
         workLogs.reject(rejectedId, decision(leaderId, "工时不实"));
         WorkLog rejected = workLogRepository.findById(rejectedId).orElseThrow();
         assertEquals("驳回", rejected.approvalStatus);
-        assertNull(rejected.laborCostAmount);
-        assertNull(rejected.hourlyCostAmountSnapshot);
+        assertNull(costOccurrences.findEffectiveLabor(rejectedId));
         assertEquals(leaderId, rejected.approvedByEmployeeId);
         assertNotNull(rejected.approvedAt);
         assertEquals("工时不实", rejected.approvalComment);
         mvc.perform(get("/work-logs/approvals")).andExpect(status().isOk());
+    }
+
+    @Test
+    void expenseAllocationClaimAndSingleCost() throws Exception {
+        long companyId = companyForOrg("EX-CO", "费用公司");
+        long otherCompanyId = companyForOrg("EX-CO2", "另一采购公司");
+        long workerId = employee("阮小七", "E-EX-1");
+        long leaderId = employee("公孙胜", "E-EX-2");
+        long personId = employeeRepository.findById(workerId).orElseThrow().personId;
+        long vendorPersonId = person("云厂商");
+        SupplierForm archive = supplier("SP-CLOUD", "云服务商", companyId);
+        archive.setPersonId(vendorPersonId);
+        long supplierId = supplierService.save(archive);
+        long projectA = projectService.save(project("EX-A", "项目甲", companyId));
+        long projectB = projectService.save(project("EX-B", "项目乙", companyId));
+
+        CostForm shortfall = spend(companyId, "CLOUD-SHORT", "10000", "云服务", null, workerId, supplierId);
+        shortfall.getAllocations().add(allocation(projectA, "6000"));
+        shortfall.getAllocations().add(allocation(projectB, "3000"));
+        assertTrue(messageOf(() -> costOccurrences.save(shortfall)).contains("分配合计"));
+
+        CostForm cloud = spend(companyId, "CLOUD-1", "10000", "云服务", null, workerId, supplierId);
+        cloud.getAllocations().add(allocation(projectA, "6000"));
+        cloud.getAllocations().add(allocation(projectB, "4000"));
+        long cloudId = costOccurrences.save(cloud);
+        assertEquals(0, new BigDecimal("10000.00").compareTo(costRepository.findById(cloudId).orElseThrow().costAmount));
+        assertEquals(2, costAllocations.findByCostOccurrenceIdOrderByIdAsc(cloudId).size());
+        assertEquals(0, new BigDecimal("10000.00").compareTo(
+                costAllocations.findByCostOccurrenceIdOrderByIdAsc(cloudId).stream()
+                        .map(row -> row.allocatedAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)));
+
+        SupplierForm locked = supplierService.form(supplierId);
+        locked.setPurchasingCompanyId(otherCompanyId);
+        assertTrue(messageOf(() -> supplierService.save(locked)).contains("不能更换"));
+        assertTrue(messageOf(() -> supplierService.delete(supplierId)).contains("不能删除"));
+
+        CostForm exam = spend(companyId, "EXAM-1", "500", "体检", "500", workerId, null);
+        exam.setApprovalStatus("已批准");
+        exam.setApprovedByEmployeeId(leaderId);
+        exam.setApprovedAt(LocalDateTime.now());
+        long examId = costOccurrences.save(exam);
+
+        ExpenseClaimForm claim = new ExpenseClaimForm();
+        claim.setClaimNumber("CL-EXAM");
+        claim.setClaimType("体检费用");
+        claim.setClaimantEmployeeId(workerId);
+        claim.setReimbursementCompanyId(companyId);
+        claim.setCurrency("CNY");
+        claim.setSubmitForApproval(true);
+        ExpenseClaimForm.LineRow line = new ExpenseClaimForm.LineRow();
+        line.setCostOccurrenceId(examId);
+        line.setClaimedReimbursementAmount(new BigDecimal("500"));
+        claim.getLines().add(line);
+        long claimId = expenseClaims.save(claim);
+        expenseClaims.approve(claimId, decision(leaderId, "同意报销"));
+
+        PayableItem payable = payables.findByExpenseClaimId(claimId).get(0);
+        assertEquals(personId, payable.creditorPersonId);
+        assertNull(payable.creditorCompanyId);
+        assertNull(payable.supplierId);
+        assertEquals(companyId, payable.debtorCompanyId);
+        assertEquals(0, new BigDecimal("500.00").compareTo(payable.payableAmount));
+        assertEquals("员工报销", payable.payablePurpose);
+        assertEquals("已确认", payable.status);
+
+        expenseClaims.payApprovedClaim(claimId, leaderId);
+        assertEquals(1, costRepository.findByCostNumber("EXAM-1").size());
+        assertEquals(0, new BigDecimal("500.00").compareTo(costRepository.findByCostNumber("EXAM-1").get(0).costAmount));
+        assertEquals(1, costRepository.findByCostNumber("CLOUD-1").size());
+        assertFalse(paymentAllocations.findByPayableItemId(payable.id).isEmpty());
+        assertEquals(0, new BigDecimal("500.00").compareTo(
+                paymentAllocations.findByPayableItemId(payable.id).get(0).settlementAmount));
+
+        mvc.perform(get("/costs/" + cloudId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("10000")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("6000")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("4000")));
+        mvc.perform(get("/costs")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("CLOUD-1")));
+        mvc.perform(get("/expense-claims/new")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("项目费用")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("体检费用")));
+        mvc.perform(get("/expense-claims/" + claimId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("500")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("体检费用")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(payable.payableNumber)));
+    }
+
+    private CostForm spend(
+            long companyId, String number, String amount, String type, String advance, Long employeeId, Long supplierId) {
+        CostForm form = new CostForm();
+        form.setBearingCompanyId(companyId);
+        form.setIncurredByEmployeeId(employeeId);
+        form.setSupplierId(supplierId);
+        form.setCostNumber(number);
+        form.setCostType(type);
+        form.setCostBasis("实际费用");
+        form.setCostAmount(new BigDecimal(amount));
+        form.setCurrency("CNY");
+        form.setIncurredAt(LocalDateTime.now());
+        form.setEmployeeAdvancedAmount(advance == null ? null : new BigDecimal(advance));
+        form.setDescription(number);
+        form.setApprovalStatus("草稿");
+        form.setStatus("有效");
+        return form;
+    }
+
+    private CostForm.AllocationRow allocation(long projectId, String amount) {
+        CostForm.AllocationRow row = new CostForm.AllocationRow();
+        row.setProjectId(projectId);
+        row.setAllocatedAmount(new BigDecimal(amount));
+        row.setCurrency("CNY");
+        row.setAllocationMethod("直接指定");
+        row.setStatus("有效");
+        return row;
     }
 
     private LaborCostRateForm rate(long employmentId, String amount, int version, LocalDate from, long approverId) {

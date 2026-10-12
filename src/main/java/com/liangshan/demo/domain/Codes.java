@@ -76,6 +76,30 @@ public final class Codes {
     public static final List<String> WORK_RECORD_STATUS = List.of(WORK_RECORD_EFFECTIVE, WORK_RECORD_SUPERSEDED, WORK_RECORD_VOID);
     public static final String RATE_APPROVED = "已批准";
     public static final List<String> RATE_APPROVAL_STATUS = List.of("草稿", "待审批", RATE_APPROVED, "驳回");
+    public static final String COST_BASIS_ACTUAL = "实际费用";
+    public static final String COST_BASIS_STANDARD_LABOR = "标准人工成本";
+    public static final String COST_BASIS_PAYROLL = "工资成本";
+    public static final List<String> COST_BASIS = List.of(COST_BASIS_ACTUAL, COST_BASIS_STANDARD_LABOR, COST_BASIS_PAYROLL);
+    public static final List<String> COST_TYPES = List.of("云服务", "人工成本", "体检", "差旅", "其他");
+    public static final String COST_EFFECTIVE = "有效";
+    public static final String COST_SUPERSEDED = "已被替代";
+    public static final String COST_VOID = "已作废";
+    public static final List<String> COST_RECORD_STATUS = List.of(COST_EFFECTIVE, COST_SUPERSEDED, COST_VOID);
+    public static final List<String> COST_APPROVAL_STATUS = List.of("草稿", "待审批", RATE_APPROVED, "驳回");
+    public static final List<String> ALLOCATION_METHODS = List.of("按工时", "比例", "直接指定");
+    public static final String ALLOCATION_EFFECTIVE = "有效";
+    public static final List<String> ALLOCATION_STATUS = List.of(ALLOCATION_EFFECTIVE, "已替代", "已作废");
+    public static final String CLAIM_PROJECT = "项目费用";
+    public static final String CLAIM_EXAM = "体检费用";
+    public static final List<String> CLAIM_TYPES = List.of(CLAIM_PROJECT, CLAIM_EXAM);
+    public static final String CLAIM_DRAFT = "草稿";
+    public static final String CLAIM_PENDING = "待审";
+    public static final String CLAIM_APPROVED = "通过";
+    public static final String CLAIM_REJECTED = "驳回";
+    public static final List<String> CLAIM_APPROVAL_STATUS = List.of(CLAIM_DRAFT, CLAIM_PENDING, CLAIM_APPROVED, CLAIM_REJECTED);
+    public static final String PAYABLE_CONFIRMED = "已确认";
+    public static final List<String> PAYABLE_STATUS = List.of("草稿", PAYABLE_CONFIRMED, "已作废");
+    public static final String PAYABLE_REIMBURSEMENT = "员工报销";
 
     private Codes() {
     }

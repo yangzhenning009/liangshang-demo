@@ -24,6 +24,4 @@ public interface WorkLogRepository extends JpaRepository<WorkLog, Long> {
     boolean existsByApprovedByEmployeeId(Long approvedByEmployeeId);
 
     boolean existsBySupersedesWorkLogId(Long supersedesWorkLogId);
-
-    boolean existsByLaborCostRateId(Long laborCostRateId);
 }

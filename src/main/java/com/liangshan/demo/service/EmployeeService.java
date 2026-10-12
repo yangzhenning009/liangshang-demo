@@ -29,6 +29,7 @@ public class EmployeeService {
     private final ProjectLinkGuard projectLinks;
     private final ContractLinkGuard contractLinks;
     private final WorkLogLinkGuard workLogLinks;
+    private final CostLinkGuard costLinks;
     private final FulfillmentLinkGuard fulfillmentLinks;
 
     public record EmployeeRow(Long id, String employeeCode, String personName, String workEmail, String workPhone, String status) {
@@ -109,6 +110,9 @@ public class EmployeeService {
         }
         if (workLogLinks.employeeUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该员工仍有工时或成本率审批记录，不能删除"));
+        }
+        if (costLinks.employeeUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该员工仍有费用或报销记录，不能删除"));
         }
         if (fulfillmentLinks.employeeUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该员工仍被交付或验收引用，不能删除"));

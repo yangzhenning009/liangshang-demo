@@ -8,20 +8,21 @@
     <div class="page-head">
         <div>
             <h1 th:text="${form.id == null} ? '填报工时' : '工时 #' + ${form.id}">填报工时</h1>
-            <p class="lede">批准时按当时的标准成本率计算人工成本，并把单价抄到这条工时上。</p>
+            <p class="lede">批准时按当时的标准成本率生成一笔人工成本，并把单价抄到成本上。</p>
         </div>
         <a class="btn secondary" th:href="@{/work-logs}">返回列表</a>
     </div>
-    <section class="panel" th:if="${stored != null and stored.laborCostAmount != null}">
+    <section class="panel" th:if="${laborCost != null}">
         <h2>成本快照</h2>
         <p>
-            成本率 #<span th:text="${stored.laborCostRateId}">1</span>
-            · <span th:text="${stored.hourlyCostAmountSnapshot}">200</span>
-            <span th:text="${stored.laborCostCurrency}">CNY</span>/小时
-            · 人工成本 <strong th:text="${stored.laborCostAmount}">1600</strong>
-            <span th:text="${stored.laborCostCurrency}">CNY</span>
+            成本 #<span th:text="${laborCost.id}">1</span>
+            · 成本率 #<span th:text="${laborCost.laborCostRateId}">1</span>
+            · <span th:text="${laborCost.hourlyCostAmountSnapshot}">200</span>
+            <span th:text="${laborCost.currency}">CNY</span>/小时
+            · 人工成本 <strong th:text="${laborCost.costAmount}">1600</strong>
+            <span th:text="${laborCost.currency}">CNY</span>
         </p>
-        <p class="hint">这笔金额来自批准当时的单价。之后调整成本率，不会改写这里的快照。</p>
+        <p class="hint">这笔金额记在人工成本上。之后调整成本率，不会改写这笔成本和单价快照。</p>
     </section>
     <form class="panel" th:object="${form}" method="post"
           th:action="${form.id == null} ? @{/work-logs} : @{/work-logs/{id}(id=${form.id})}">

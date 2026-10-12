@@ -69,6 +69,7 @@ public class ProjectService {
     private final ContractLinkGuard contractLinks;
     private final FulfillmentLinkGuard fulfillmentLinks;
     private final WorkLogLinkGuard workLogLinks;
+    private final CostLinkGuard costLinks;
 
     public record Row(
             Long id,
@@ -235,6 +236,9 @@ public class ProjectService {
         get(id);
         if (workLogLinks.projectUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该项目仍有工时记录，不能删除"));
+        }
+        if (costLinks.projectUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该项目仍有费用分配，不能删除"));
         }
         if (fulfillmentLinks.projectUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该项目仍有交付记录，不能删除"));
