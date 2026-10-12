@@ -60,6 +60,7 @@ public class ExpenseClaimService {
             String currency,
             BigDecimal claimedAmount,
             String approvalStatus,
+            String approvalComment,
             String payableNumber) {
     }
 
@@ -428,6 +429,7 @@ public class ExpenseClaimService {
                 claim.currency,
                 LaborCostRateService.plain(claimed),
                 claim.approvalStatus,
+                claim.approvalComment,
                 payable == null ? null : payable.payableNumber);
     }
 }

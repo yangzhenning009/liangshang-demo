@@ -22,13 +22,14 @@
                     <th>报销人</th>
                     <th>申请金额</th>
                     <th>审批</th>
+                    <th>驳回原因</th>
                     <th>应付</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:if="${items.isEmpty()}">
-                    <td colspan="7" class="empty">还没有报销。项目费用和体检费用都从这里提交。</td>
+                    <td colspan="8" class="empty">还没有报销。项目费用和体检费用都从这里提交。</td>
                 </tr>
                 <tr th:each="item : ${items}">
                     <td th:text="${item.claimNumber}">CL-1</td>
@@ -36,6 +37,7 @@
                     <td th:text="${item.claimantLabel}">员工</td>
                     <td th:text="${item.claimedAmount + ' ' + item.currency}">500</td>
                     <td><span class="badge" th:text="${item.approvalStatus}">草稿</span></td>
+                    <td th:text="${@labels.dash(item.approvalComment)}">—</td>
                     <td th:text="${item.payableNumber == null ? '未形成' : item.payableNumber}">AP</td>
                     <td class="actions"><a th:href="@{/expense-claims/{id}/edit(id=${item.id})}">查看</a></td>
                 </tr>

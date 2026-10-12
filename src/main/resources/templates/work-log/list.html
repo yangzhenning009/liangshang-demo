@@ -25,6 +25,7 @@
                     <th>项目</th>
                     <th>工时</th>
                     <th>审批</th>
+                    <th>驳回原因</th>
                     <th>记录</th>
                     <th>成本率快照</th>
                     <th>人工成本</th>
@@ -33,7 +34,7 @@
                 </thead>
                 <tbody>
                 <tr th:if="${items.isEmpty()}">
-                    <td colspan="9" class="empty">还没有工时。先维护已批准的标准成本率，再按天填报。</td>
+                    <td colspan="10" class="empty">还没有工时。先维护已批准的标准成本率，再按天填报。</td>
                 </tr>
                 <tr th:each="item : ${items}">
                     <td th:text="${item.employeeLabel}">宋江</td>
@@ -41,6 +42,7 @@
                     <td th:text="${item.projectLabel}">项目</td>
                     <td th:text="${item.hours}">8</td>
                     <td><span class="badge" th:text="${item.approvalStatus}">草稿</span></td>
+                    <td th:text="${@labels.dash(item.approvalComment)}">—</td>
                     <td th:text="${item.recordStatus}">有效</td>
                     <td th:text="${item.hourlyCostAmountSnapshot == null ? '未核算' : item.hourlyCostAmountSnapshot + ' ' + item.laborCostCurrency + '/小时'}">200</td>
                     <td th:text="${item.laborCostAmount == null ? '未核算' : item.laborCostAmount + ' ' + item.laborCostCurrency}">1600</td>

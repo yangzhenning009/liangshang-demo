@@ -114,6 +114,7 @@ public class ExpenseClaimController {
         model.addAttribute("pending", Codes.CLAIM_PENDING.equals(stored.approvalStatus));
         model.addAttribute("payable", claims.payableOf(id));
         model.addAttribute("approvalStatus", stored.approvalStatus);
+        model.addAttribute("approvalComment", stored.approvalComment);
         return "claim/form";
     }
 

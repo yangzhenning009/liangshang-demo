@@ -1545,6 +1545,13 @@ class MasterDataDemoTest {
         assertEquals(leaderId, rejected.approvedByEmployeeId);
         assertNotNull(rejected.approvedAt);
         assertEquals("工时不实", rejected.approvalComment);
+        mvc.perform(get("/work-logs"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("工时不实")));
+        mvc.perform(get("/work-logs/" + rejectedId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("驳回原因")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("工时不实")));
         mvc.perform(get("/work-logs/approvals")).andExpect(status().isOk());
     }
 
@@ -1794,6 +1801,11 @@ class MasterDataDemoTest {
         refund.setRefundOfPaymentId(receiptId);
         refund.getAllocations().get(0).setSettlementAction("reverse");
         funds.savePayment(refund);
+        FundsService.PaymentRow refundRow = funds.payments().stream()
+                .filter(row -> "PAY-REF".equals(row.paymentNumber()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(0, BigDecimal.ZERO.compareTo(refundRow.unallocated()));
         assertEquals(0, new BigDecimal("20000").compareTo(funds.settledReceivable(receivableId)));
         assertEquals(0, new BigDecimal("40000").compareTo(funds.outstandingReceivable(receivableId)));
         mvc.perform(get("/receivables/" + receivableId + "/edit"))
@@ -2251,6 +2263,27 @@ class MasterDataDemoTest {
         assertEquals("驳回", rejected.approvalStatus);
         assertEquals("工时说明与当日任务不符", rejected.approvalComment);
         assertTrue(costRepository.findByWorkLogIdOrderByIdAsc(rejected.id).isEmpty());
+        mvc.perform(get("/work-logs"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("工时说明与当日任务不符")));
+        mvc.perform(get("/work-logs/" + rejected.id + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("驳回原因")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("工时说明与当日任务不符")));
+        Long rejectedClaimId = jdbc.queryForObject(
+                "select id from expense_claim where claim_number = 'CL-W14-REJ-HQ'", Long.class);
+        mvc.perform(get("/expense-claims"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("票据与行程不符")));
+        mvc.perform(get("/expense-claims/" + rejectedClaimId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("驳回原因")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("票据与行程不符")));
+        FundsService.PaymentRow seedRefund = funds.payments().stream()
+                .filter(row -> "PAY-W14-TK-REF".equals(row.paymentNumber()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(0, BigDecimal.ZERO.compareTo(seedRefund.unallocated()));
         Payment refund = paymentRepository.findByPaymentNumber("PAY-W14-TK-REF").get(0);
         assertEquals("退款", refund.paymentKind);
         assertNotNull(refund.refundOfPaymentId);

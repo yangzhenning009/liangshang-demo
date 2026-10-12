@@ -1036,13 +1036,18 @@ public class FundsService {
             return null;
         }
         BigDecimal used = BigDecimal.ZERO;
+        boolean refund = Codes.PAYMENT_REFUND.equals(payment.paymentKind);
         for (PaymentAllocation allocation : allocations.findByPaymentIdOrderByIdAsc(payment.id)) {
             if (!Codes.PAYMENT_CONFIRMED.equals(allocation.status)) {
                 continue;
             }
-            if (Codes.SETTLEMENT_APPLY.equals(allocation.settlementAction)) {
+            if (refund) {
+                if (Codes.SETTLEMENT_REVERSE.equals(allocation.settlementAction)) {
+                    used = used.add(allocation.settlementAmount);
+                }
+            } else if (Codes.SETTLEMENT_APPLY.equals(allocation.settlementAction)) {
                 used = used.add(allocation.settlementAmount);
-            } else if (!Codes.PAYMENT_REFUND.equals(payment.paymentKind)) {
+            } else if (Codes.SETTLEMENT_REVERSE.equals(allocation.settlementAction)) {
                 used = used.subtract(allocation.settlementAmount);
             }
         }
