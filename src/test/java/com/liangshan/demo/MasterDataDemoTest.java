@@ -22,7 +22,10 @@ import com.liangshan.demo.repository.LegalPersonRegistrationRepository;
 import com.liangshan.demo.repository.LegalPersonRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.PersonRepository;
+import com.liangshan.demo.repository.SupplierContactRepository;
+import com.liangshan.demo.repository.SupplierQualificationRepository;
 import com.liangshan.demo.repository.SupplierRepository;
+import com.liangshan.demo.repository.SupplierSupplyCategoryRepository;
 import com.liangshan.demo.repository.SupplierVersionRepository;
 import com.liangshan.demo.domain.Codes;
 import com.liangshan.demo.seed.LiangshanRoster;
@@ -40,13 +43,18 @@ import com.liangshan.demo.domain.WorkLog;
 import com.liangshan.demo.domain.AcceptanceEvent;
 import com.liangshan.demo.domain.AcceptanceLine;
 import com.liangshan.demo.domain.Contract;
+import com.liangshan.demo.domain.ContractAmendment;
+import com.liangshan.demo.domain.ContractAdditionalSignatory;
 import com.liangshan.demo.domain.ContractLine;
 import com.liangshan.demo.domain.ContractLineTermVersion;
 import com.liangshan.demo.domain.ContractStageDeliverable;
 import com.liangshan.demo.domain.ContractStageTermVersion;
 import com.liangshan.demo.domain.ContractTermVersion;
+import com.liangshan.demo.domain.Project;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
+import com.liangshan.demo.domain.ProjectDeliveryCompany;
 import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.domain.Supplier;
 import com.liangshan.demo.domain.JournalEntry;
 import com.liangshan.demo.domain.JournalLine;
 import com.liangshan.demo.domain.JournalLineSource;
@@ -54,6 +62,8 @@ import com.liangshan.demo.domain.PayableItem;
 import com.liangshan.demo.domain.ReceivableItem;
 import com.liangshan.demo.repository.CostAllocationRepository;
 import com.liangshan.demo.repository.CostOccurrenceRepository;
+import com.liangshan.demo.repository.ContractAdditionalSignatoryRepository;
+import com.liangshan.demo.repository.ContractAmendmentRepository;
 import com.liangshan.demo.repository.ContractBillingScheduleRepository;
 import com.liangshan.demo.repository.ContractPaymentScheduleRepository;
 import com.liangshan.demo.repository.InvoiceLineRepository;
@@ -76,6 +86,8 @@ import com.liangshan.demo.repository.ContractStageRepository;
 import com.liangshan.demo.repository.ContractStageTermVersionRepository;
 import com.liangshan.demo.repository.ContractTermVersionRepository;
 import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
+import com.liangshan.demo.repository.ProjectContractRepository;
+import com.liangshan.demo.repository.ProjectDeliveryCompanyRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.ProjectVersionRepository;
 import com.liangshan.demo.service.CostOccurrenceService;
@@ -306,6 +318,20 @@ class MasterDataDemoTest {
     private JournalLineSourceRepository journalSources;
     @Autowired
     private SeedRunner seedRunner;
+    @Autowired
+    private ProjectDeliveryCompanyRepository projectDeliveries;
+    @Autowired
+    private ProjectContractRepository projectContracts;
+    @Autowired
+    private ContractAdditionalSignatoryRepository additionalSignatories;
+    @Autowired
+    private ContractAmendmentRepository contractAmendments;
+    @Autowired
+    private SupplierContactRepository supplierContacts;
+    @Autowired
+    private SupplierSupplyCategoryRepository supplierCategories;
+    @Autowired
+    private SupplierQualificationRepository supplierQualifications;
     @Autowired
     private DepartmentRepository departmentRepository;
     @Autowired
@@ -2163,8 +2189,9 @@ class MasterDataDemoTest {
         assertEquals("蒋敬", LiangshanRoster.name(53));
         assertEquals("施恩", LiangshanRoster.name(85));
         assertEquals("段景住", LiangshanRoster.name(108));
-        assertTrue(employeeRepository.findByEmployeeCode("LS-E-001").isEmpty());
-        assertTrue(employeeRepository.findByEmployeeCode("LS-E-108").isEmpty());
+        boolean songMissing = employeeRepository.findByEmployeeCode("LS-E-001").isEmpty();
+        boolean lastMissing = employeeRepository.findByEmployeeCode("LS-E-108").isEmpty();
+        assertEquals(songMissing, lastMissing);
 
         seedRunner.run();
         assertSeededOrg();
@@ -2186,6 +2213,148 @@ class MasterDataDemoTest {
         seedRunner.run();
         assertEquals(once, seedTableCounts());
         assertSeededOrg();
+    }
+
+    @Test
+    void procurementSeedIsIdempotent() throws Exception {
+        seedRunner.run();
+        assertProcurementSeed();
+        Map<String, Long> once = procurementTableCounts();
+        seedRunner.run();
+        assertEquals(once, procurementTableCounts());
+        assertProcurementSeed();
+        mvc.perform(get("/seed"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("wp13")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("项目与采购")));
+    }
+
+    private void assertProcurementSeed() {
+        Set<String> owners = new HashSet<>();
+        Set<String> deliveries = new HashSet<>();
+        for (int number = 1; number <= 10; number++) {
+            Project project = projectRepository.findByProjectCode(String.format(Locale.ROOT, "PJ-W13-%02d", number)).get(0);
+            Employee manager = employeeRepository.findById(project.projectManagerEmployeeId).orElseThrow();
+            assertTrue(manager.employeeCode.startsWith("LS-E-"));
+            assertNotNull(project.approvedBudgetVersionId);
+            owners.add(companyCode(project.ownerCompanyId));
+            List<ProjectDeliveryCompany> rows = projectDeliveries.findByProjectIdOrderByIdAsc(project.id);
+            assertEquals(1, rows.size());
+            deliveries.add(companyCode(rows.get(0).deliveryCompanyId));
+        }
+        assertEquals(Set.of("LS-GROUP", "LS-JZ", "LS-DM", "LS-BJ", "LS-JS"), owners);
+        assertEquals(Set.of("LS-GROUP", "LS-JZ", "LS-DM", "LS-BJ", "LS-JS"), deliveries);
+
+        Company headquarters = companyRepository.findByCompanyCode("LS-GROUP").get(0);
+        Company jizhou = companyRepository.findByCompanyCode("LS-JZ").get(0);
+        Company daming = companyRepository.findByCompanyCode("LS-DM").get(0);
+        Company beijing = companyRepository.findByCompanyCode("LS-BJ").get(0);
+        Company jiangzhou = companyRepository.findByCompanyCode("LS-JS").get(0);
+        Company tokyo = companyRepository.findByCompanyCode("WP13-TK").get(0);
+        Company daxing = companyRepository.findByCompanyCode("WP13-BJC").get(0);
+        Company zhujia = companyRepository.findByCompanyCode("WP13-ZHU").get(0);
+
+        Project tokyoProject = projectRepository.findByProjectCode("PJ-W13-06").get(0);
+        assertEquals(headquarters.id, tokyoProject.ownerCompanyId);
+        assertEquals(tokyo.id, tokyoProject.customerCompanyId);
+        assertEquals(jizhou.id, projectDeliveries.findByProjectIdOrderByIdAsc(tokyoProject.id).get(0).deliveryCompanyId);
+        Contract tokyoSale = contractRepository.findByContractNumber("CT-W13-SALE-TK").get(0);
+        assertEquals("销售", tokyoSale.contractType);
+        assertEquals(headquarters.id, tokyoSale.sellerCompanyId);
+        assertEquals(tokyo.id, tokyoSale.buyerCompanyId);
+        assertNull(tokyoSale.supplierId);
+        assertNull(tokyoSale.procurementCompanyId);
+        Employee song = employeeRepository.findByEmployeeCode("LS-E-001").get(0);
+        assertEquals(song.personId, tokyoSale.sellerSignatoryPersonId);
+        for (ContractAdditionalSignatory signatory : additionalSignatories.findByContractIdOrderByIdAsc(tokyoSale.id)) {
+            assertFalse(jizhou.id.equals(signatory.signatoryCompanyId));
+        }
+        assertTrue(projectContracts.findByContractIdOrderByIdAsc(tokyoSale.id).stream()
+                .anyMatch(link -> tokyoProject.id.equals(link.projectId)));
+        assertEquals(2, contractStages.findByContractIdOrderBySequenceNoAsc(tokyoSale.id).size());
+        assertEquals(2, billingSchedules.findByContractIdOrderByScheduleNumberAsc(tokyoSale.id).size());
+        assertEquals(2, paymentSchedules.findByContractIdOrderByScheduleNumberAsc(tokyoSale.id).size());
+
+        Project beijingProject = projectRepository.findByProjectCode("PJ-W13-07").get(0);
+        Contract beijingSale = contractRepository.findByContractNumber("CT-W13-SALE-BJ").get(0);
+        assertEquals(beijing.id, beijingSale.sellerCompanyId);
+        assertEquals(daxing.id, beijingSale.buyerCompanyId);
+        assertEquals(beijing.id, beijingProject.ownerCompanyId);
+        assertEquals(beijing.id, projectDeliveries.findByProjectIdOrderByIdAsc(beijingProject.id).get(0).deliveryCompanyId);
+        assertEquals(2, contractStages.findByContractIdOrderBySequenceNoAsc(beijingSale.id).size());
+        assertFalse(billingSchedules.findByContractIdOrderByScheduleNumberAsc(beijingSale.id).isEmpty());
+        assertFalse(paymentSchedules.findByContractIdOrderByScheduleNumberAsc(beijingSale.id).isEmpty());
+
+        List<Supplier> zhujiaArchives = supplierRepository.findAll().stream()
+                .filter(row -> zhujia.id.equals(row.companyId))
+                .toList();
+        assertEquals(2, zhujiaArchives.size());
+        Set<Long> purchasingCompanies = new HashSet<>();
+        for (Supplier archive : zhujiaArchives) {
+            purchasingCompanies.add(archive.purchasingCompanyId);
+            assertFalse(supplierContacts.findBySupplierIdOrderByIdAsc(archive.id).isEmpty());
+            assertEquals("兵器", supplierCategories.findBySupplierIdOrderByIdAsc(archive.id).get(0).supplyCategoryName);
+            assertFalse(supplierQualifications.findBySupplierIdOrderByIdAsc(archive.id).isEmpty());
+        }
+        assertEquals(Set.of(headquarters.id, jizhou.id), purchasingCompanies);
+
+        Supplier headquartersArchive = zhujiaArchives.stream()
+                .filter(row -> headquarters.id.equals(row.purchasingCompanyId))
+                .findFirst()
+                .orElseThrow();
+        Contract headquartersPurchase = contractRepository.findByContractNumber("CT-W13-BUY-HQ").get(0);
+        assertEquals(headquarters.id, headquartersPurchase.buyerCompanyId);
+        assertEquals(headquartersArchive.id, headquartersPurchase.supplierId);
+        assertEquals(zhujia.id, headquartersPurchase.sellerCompanyId);
+        Project centralBuy = projectRepository.findByProjectCode("PJ-W13-08").get(0);
+        assertEquals(daming.id, projectDeliveries.findByProjectIdOrderByIdAsc(centralBuy.id).get(0).deliveryCompanyId);
+        assertTrue(projectContracts.findByContractIdOrderByIdAsc(headquartersPurchase.id).stream()
+                .anyMatch(link -> centralBuy.id.equals(link.projectId)));
+        assertEquals(2, paymentSchedules.findByContractIdOrderByScheduleNumberAsc(headquartersPurchase.id).size());
+
+        Supplier jizhouArchive = zhujiaArchives.stream()
+                .filter(row -> jizhou.id.equals(row.purchasingCompanyId))
+                .findFirst()
+                .orElseThrow();
+        Contract jizhouPurchase = contractRepository.findByContractNumber("CT-W13-BUY-JZ").get(0);
+        assertEquals(jizhou.id, jizhouPurchase.buyerCompanyId);
+        assertEquals(jizhouArchive.id, jizhouPurchase.supplierId);
+        assertEquals(zhujia.id, jizhouPurchase.sellerCompanyId);
+        assertFalse(headquartersArchive.id.equals(jizhouArchive.id));
+
+        Contract jiangzhouPurchase = contractRepository.findByContractNumber("CT-W13-BUY-JS").get(0);
+        assertEquals(jiangzhou.id, jiangzhouPurchase.buyerCompanyId);
+        Project spearProject = projectRepository.findByProjectCode("PJ-W13-10").get(0);
+        assertEquals(beijing.id, projectDeliveries.findByProjectIdOrderByIdAsc(spearProject.id).get(0).deliveryCompanyId);
+
+        List<ContractTermVersion> versions = contractTerms.findByContractIdOrderByVersionNumberAsc(headquartersPurchase.id);
+        assertEquals(2, versions.size());
+        ContractTermVersion original = versions.get(0);
+        ContractTermVersion revised = versions.get(1);
+        assertNull(original.amendmentId);
+        assertEquals(LocalDate.of(2024, 6, 15), original.validTo);
+        assertEquals(0, new BigDecimal("113000.00").compareTo(original.contractGrossAmount));
+        assertNotNull(revised.amendmentId);
+        assertNull(revised.validTo);
+        assertEquals(0, new BigDecimal("135600.00").compareTo(revised.contractGrossAmount));
+        ContractAmendment amendment = contractAmendments.findById(revised.amendmentId).orElseThrow();
+        assertEquals("BG-W13-1", amendment.amendmentNumber);
+        assertTrue(contractAmendments.findByContractIdOrderByIdAsc(jizhouPurchase.id).isEmpty());
+    }
+
+    private Map<String, Long> procurementTableCounts() {
+        List<String> tables = List.of(
+                "company", "company_registration", "company_version", "legal_person", "person", "source_document",
+                "supplier", "supplier_contact", "supplier_supply_category", "supplier_qualification", "supplier_version",
+                "project", "project_member", "project_budget_version", "project_delivery_company", "project_version",
+                "contract", "contract_term_version", "contract_line", "contract_line_term_version",
+                "contract_stage", "contract_stage_term_version", "contract_stage_deliverable",
+                "contract_amendment", "contract_billing_schedule", "contract_payment_schedule", "project_contract");
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (String table : tables) {
+            counts.put(table, jdbc.queryForObject("select count(*) from " + table, Long.class));
+        }
+        return counts;
     }
 
     private void assertSeededOrg() {
