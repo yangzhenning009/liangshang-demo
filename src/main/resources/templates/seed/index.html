@@ -14,7 +14,7 @@
     <section class="panel">
         <p>梁山员工编号（LS-E-）现有 <strong th:text="${heroCount}">0</strong> 人。座次为天罡三十六星与地煞七十二星，自宋江至段景住。</p>
         <ul class="rules">
-            <li th:each="stage : ${stages}" th:text="${stage.label} + '（' + stage.code + '）'">组织与人事（wp12）</li>
+            <li th:each="stage : ${stages}" th:text="|${stage.label}（${stage.code}）|">组织与人事</li>
         </ul>
         <p class="hint">启动参数 --seed，或配置 liangshan.seed=true，与此按钮相同。后续阶段按序号接在现有阶段之后。</p>
         <form method="post" th:action="@{/seed}">
