@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>人工成本率 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>人工成本率</h1>
+            <p class="lede">按雇佣和成本口径分版本。工时批准后使用的是当时的单价，不跟随后续版本。</p>
+        </div>
+        <a class="btn" th:href="@{/labor-cost-rates/new}">新建成本率</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>雇佣</th>
+                    <th>口径</th>
+                    <th>版本</th>
+                    <th>单价</th>
+                    <th>开始</th>
+                    <th>结束</th>
+                    <th>审批</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="8" class="empty">还没有成本率。标准成本用于把已批工时换算成金额。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.employmentLabel}">雇佣</td>
+                    <td th:text="${item.costBasis}">标准成本</td>
+                    <td th:text="${item.rateVersionNumber}">1</td>
+                    <td th:text="${item.hourlyCostAmount + ' ' + item.currency + '/小时'}">200</td>
+                    <td th:text="${item.validFrom}">开始</td>
+                    <td th:text="${item.validTo == null ? '当前' : item.validTo}">当前</td>
+                    <td><span class="badge" th:text="${item.approvalStatus}">草稿</span></td>
+                    <td class="actions"><a th:href="@{/labor-cost-rates/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

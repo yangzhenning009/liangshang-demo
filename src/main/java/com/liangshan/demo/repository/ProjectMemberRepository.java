@@ -9,6 +9,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     List<ProjectMember> findByProjectIdOrderByIdAsc(Long projectId);
 
+    List<ProjectMember> findByProjectIdAndEmployeeIdOrderByIdAsc(Long projectId, Long employeeId);
+
     boolean existsByEmployeeId(Long employeeId);
 
     boolean existsByEmploymentId(Long employmentId);

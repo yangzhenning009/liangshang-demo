@@ -33,6 +33,10 @@
             <span class="nav-label">项目管理</span>
             <a th:href="@{/projects}" th:classappend="${activeNav == 'projects'} ? 'active'">项目</a>
             <a th:href="@{/contracts}" th:classappend="${activeNav == 'contracts'} ? 'active'">合同</a>
+            <span class="nav-label">工时</span>
+            <a th:href="@{/work-logs}" th:classappend="${activeNav == 'work-logs'} ? 'active'">工时填报</a>
+            <a th:href="@{/work-logs/approvals}" th:classappend="${activeNav == 'work-approvals'} ? 'active'">工时审批</a>
+            <a th:href="@{/labor-cost-rates}" th:classappend="${activeNav == 'labor-rates'} ? 'active'">成本率</a>
         </nav>
         <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
     </aside>

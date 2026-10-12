@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>工时 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '填报工时' : '工时 #' + ${form.id}">填报工时</h1>
+            <p class="lede">批准时按当时的标准成本率计算人工成本，并把单价抄到这条工时上。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/work-logs}">返回列表</a>
+    </div>
+    <section class="panel" th:if="${stored != null and stored.laborCostAmount != null}">
+        <h2>成本快照</h2>
+        <p>
+            成本率 #<span th:text="${stored.laborCostRateId}">1</span>
+            · <span th:text="${stored.hourlyCostAmountSnapshot}">200</span>
+            <span th:text="${stored.laborCostCurrency}">CNY</span>/小时
+            · 人工成本 <strong th:text="${stored.laborCostAmount}">1600</strong>
+            <span th:text="${stored.laborCostCurrency}">CNY</span>
+        </p>
+        <p class="hint">这笔金额来自批准当时的单价。之后调整成本率，不会改写这里的快照。</p>
+    </section>
+    <form class="panel" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/work-logs} : @{/work-logs/{id}(id=${form.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <p class="hint" th:if="${locked}">待审或已通过的工时不能直接改。驳回后可以修改再提交；已通过的更正要新建一条并指向原记录。</p>
+        <input type="hidden" th:field="*{id}">
+        <fieldset th:disabled="${locked}">
+            <div class="grid">
+                <label class="field">员工
+                    <select th:field="*{employeeId}">
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">雇佣
+                    <select th:field="*{employmentId}">
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${employmentChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">任职
+                    <select th:field="*{departmentAssignmentId}">
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${assignmentChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">项目
+                    <select th:field="*{projectId}">
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${projectChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">合同阶段
+                    <select th:field="*{contractStageId}">
+                        <option value="">不指定</option>
+                        <option th:each="choice : ${stageChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">工作日
+                    <input type="date" th:field="*{workDate}">
+                </label>
+                <label class="field">工时
+                    <input type="number" step="0.01" min="0" th:field="*{hours}">
+                </label>
+                <label class="field">更正原工时
+                    <input type="number" min="1" th:field="*{supersedesWorkLogId}" placeholder="留空表示新记录">
+                </label>
+                <label class="field span-2">工作内容
+                    <input th:field="*{workDescription}">
+                </label>
+                <label class="check">
+                    <input type="checkbox" th:field="*{billable}"> 可按合同计费
+                </label>
+            </div>
+        </fieldset>
+        <div class="form-actions" th:if="${!locked}">
+            <button type="submit" name="submitForApproval" value="false">保存草稿</button>
+            <button type="submit" name="submitForApproval" value="true">提交审批</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

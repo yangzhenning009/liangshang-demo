@@ -50,6 +50,7 @@ public class EmployeeOrgService {
     private final DepartmentRepository departments;
     private final SourceDocumentService documents;
     private final ProjectLinkGuard projectLinks;
+    private final WorkLogLinkGuard workLogLinks;
 
     public record Header(Long id, String employeeCode, String personName, String status) {
     }
@@ -512,6 +513,9 @@ public class EmployeeOrgService {
                 if (projectLinks.employmentUsed(existing.id)) {
                     throw new FieldErrorsException(Map.of("*", "该雇佣仍被项目成员引用，不能删除"));
                 }
+                if (workLogLinks.employmentUsed(existing.id)) {
+                    throw new FieldErrorsException(Map.of("*", "该雇佣仍被工时或成本率引用，不能删除"));
+                }
                 employments.delete(existing);
             }
         }
@@ -553,6 +557,9 @@ public class EmployeeOrgService {
             if (!keep.contains(existing.id)) {
                 if (projectLinks.assignmentUsed(existing.id)) {
                     throw new FieldErrorsException(Map.of("*", "该任职仍被项目成员引用，不能删除"));
+                }
+                if (workLogLinks.assignmentUsed(existing.id)) {
+                    throw new FieldErrorsException(Map.of("*", "该任职仍被工时引用，不能删除"));
                 }
                 assignments.delete(existing);
             }

@@ -78,6 +78,7 @@ public class ContractService {
     private final ProjectRepository projects;
     private final SourceDocumentService documents;
     private final FulfillmentLinkGuard fulfillmentLinks;
+    private final WorkLogLinkGuard workLogLinks;
 
     public record Row(
             Long id,
@@ -851,6 +852,9 @@ public class ContractService {
             }
             if (fulfillmentLinks.stageUsed(existing.id)) {
                 throw new FieldErrorsException(Map.of("*", "该阶段已有开票计划、收付款计划或交付记录，不能删除"));
+            }
+            if (workLogLinks.stageUsed(existing.id)) {
+                throw new FieldErrorsException(Map.of("*", "该阶段已有工时记录，不能删除"));
             }
             for (ContractStageTermVersion term : stageTerms.findByContractStageIdOrderByVersionNumberAsc(existing.id)) {
                 deliverables.findByStageTermVersionIdOrderByIdAsc(term.id).forEach(deliverables::delete);

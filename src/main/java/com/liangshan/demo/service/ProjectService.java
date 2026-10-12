@@ -68,6 +68,7 @@ public class ProjectService {
     private final SourceDocumentService documents;
     private final ContractLinkGuard contractLinks;
     private final FulfillmentLinkGuard fulfillmentLinks;
+    private final WorkLogLinkGuard workLogLinks;
 
     public record Row(
             Long id,
@@ -232,6 +233,9 @@ public class ProjectService {
     @Transactional
     public void delete(Long id) {
         get(id);
+        if (workLogLinks.projectUsed(id)) {
+            throw new FieldErrorsException(Map.of("*", "该项目仍有工时记录，不能删除"));
+        }
         if (fulfillmentLinks.projectUsed(id)) {
             throw new FieldErrorsException(Map.of("*", "该项目仍有交付记录，不能删除"));
         }

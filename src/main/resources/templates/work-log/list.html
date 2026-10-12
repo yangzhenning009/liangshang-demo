@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>工时填报 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>工时填报</h1>
+            <p class="lede">只有项目成员，且成员、雇佣和任职期间都盖住工作日，才能填这一天的工时。</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn secondary" th:href="@{/work-logs/approvals}">审批队列</a>
+            <a class="btn" th:href="@{/work-logs/new}">填报工时</a>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>员工</th>
+                    <th>工作日</th>
+                    <th>项目</th>
+                    <th>工时</th>
+                    <th>审批</th>
+                    <th>记录</th>
+                    <th>成本率快照</th>
+                    <th>人工成本</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="9" class="empty">还没有工时。先维护已批准的标准成本率，再按天填报。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.employeeLabel}">宋江</td>
+                    <td th:text="${item.workDate}">2026-10-12</td>
+                    <td th:text="${item.projectLabel}">项目</td>
+                    <td th:text="${item.hours}">8</td>
+                    <td><span class="badge" th:text="${item.approvalStatus}">草稿</span></td>
+                    <td th:text="${item.recordStatus}">有效</td>
+                    <td th:text="${item.hourlyCostAmountSnapshot == null ? '未核算' : item.hourlyCostAmountSnapshot + ' ' + item.laborCostCurrency + '/小时'}">200</td>
+                    <td th:text="${item.laborCostAmount == null ? '未核算' : item.laborCostAmount + ' ' + item.laborCostCurrency}">1600</td>
+                    <td class="actions"><a th:href="@{/work-logs/{id}/edit(id=${item.id})}">查看</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

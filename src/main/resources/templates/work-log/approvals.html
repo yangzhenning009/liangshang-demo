@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>工时审批 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>工时审批</h1>
+            <p class="lede">批准时写入成本率快照。驳回必须填写原因，并记下审批人和时间。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/work-logs}">返回填报</a>
+    </div>
+    <section class="panel" th:if="${items.isEmpty()}">
+        <p class="empty">没有待审工时。</p>
+    </section>
+    <section class="panel" th:each="item : ${items}">
+        <h2 th:text="${item.employeeLabel + ' · ' + item.workDate + ' · ' + item.hours + ' 小时'}">待审</h2>
+        <p th:text="${item.projectLabel + ' · ' + item.description}">内容</p>
+        <form method="post" th:action="@{/work-logs/{id}/approve(id=${item.id})}">
+            <div class="grid">
+                <label class="field">审批人
+                    <select name="approvedByEmployeeId" required>
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">审批时间
+                    <input type="datetime-local" name="approvedAt" required>
+                </label>
+                <label class="field span-2">意见
+                    <input name="approvalComment" placeholder="驳回时必填">
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit">批准</button>
+            </div>
+        </form>
+        <form method="post" th:action="@{/work-logs/{id}/reject(id=${item.id})}">
+            <div class="grid">
+                <label class="field">审批人
+                    <select name="approvedByEmployeeId" required>
+                        <option value="">请选择</option>
+                        <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">审批时间
+                    <input type="datetime-local" name="approvedAt" required>
+                </label>
+                <label class="field span-2">驳回原因
+                    <input name="approvalComment" required>
+                </label>
+            </div>
+            <div class="form-actions">
+                <button class="danger" type="submit">驳回</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

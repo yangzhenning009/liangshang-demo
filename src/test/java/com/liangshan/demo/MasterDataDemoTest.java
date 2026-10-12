@@ -18,6 +18,8 @@ import com.liangshan.demo.service.EmployeeService;
 import com.liangshan.demo.service.SourceDocumentService;
 import com.liangshan.demo.service.FieldErrorsException;
 import com.liangshan.demo.service.LegalPersonService;
+import com.liangshan.demo.domain.LaborCostRate;
+import com.liangshan.demo.domain.WorkLog;
 import com.liangshan.demo.domain.AcceptanceEvent;
 import com.liangshan.demo.domain.AcceptanceLine;
 import com.liangshan.demo.domain.Contract;
@@ -28,6 +30,8 @@ import com.liangshan.demo.domain.ContractStageTermVersion;
 import com.liangshan.demo.domain.ContractTermVersion;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
 import com.liangshan.demo.domain.ProjectVersion;
+import com.liangshan.demo.repository.LaborCostRateRepository;
+import com.liangshan.demo.repository.WorkLogRepository;
 import com.liangshan.demo.repository.AcceptanceEventRepository;
 import com.liangshan.demo.repository.AcceptanceLineRepository;
 import com.liangshan.demo.repository.ContractLineRepository;
@@ -41,6 +45,8 @@ import com.liangshan.demo.repository.ContractTermVersionRepository;
 import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.ProjectVersionRepository;
+import com.liangshan.demo.service.LaborCostRateService;
+import com.liangshan.demo.service.WorkLogService;
 import com.liangshan.demo.service.ContractService;
 import com.liangshan.demo.service.FulfillmentService;
 import com.liangshan.demo.service.PersonService;
@@ -57,6 +63,9 @@ import com.liangshan.demo.web.form.SourceDocumentForm;
 import com.liangshan.demo.web.form.SupplierDetailForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
+import com.liangshan.demo.web.form.LaborCostRateForm;
+import com.liangshan.demo.web.form.WorkLogDecisionForm;
+import com.liangshan.demo.web.form.WorkLogForm;
 import com.liangshan.demo.web.form.AcceptanceEventForm;
 import com.liangshan.demo.web.form.ContractAmendmentForm;
 import com.liangshan.demo.web.form.ContractPlanForm;
@@ -189,6 +198,14 @@ class MasterDataDemoTest {
     private AcceptanceEventRepository acceptanceEvents;
     @Autowired
     private AcceptanceLineRepository acceptanceLines;
+    @Autowired
+    private WorkLogService workLogs;
+    @Autowired
+    private WorkLogRepository workLogRepository;
+    @Autowired
+    private LaborCostRateService laborCostRates;
+    @Autowired
+    private LaborCostRateRepository laborCostRateRepository;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -256,7 +273,9 @@ class MasterDataDemoTest {
                 "delivery_event",
                 "delivery_line",
                 "acceptance_event",
-                "acceptance_line")));
+                "acceptance_line",
+                "work_log",
+                "labor_cost_rate")));
         assertEquals("integer", String.valueOf(column("contract_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals("integer", String.valueOf(column("contract_stage_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("contract", "contract_number").get("notnull")).intValue());
@@ -317,6 +336,24 @@ class MasterDataDemoTest {
         assertEquals(1, ((Number) column("acceptance_line", "reviewed_quantity").get("notnull")).intValue());
         assertEquals(1, ((Number) column("acceptance_line", "accepted_quantity").get("notnull")).intValue());
         assertEquals(1, ((Number) column("acceptance_line", "rejected_quantity").get("notnull")).intValue());
+        assertEquals("integer", String.valueOf(column("work_log", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("labor_cost_rate", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(1, ((Number) column("work_log", "employee_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("work_log", "employment_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("work_log", "project_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("work_log", "hours").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "department_assignment_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "contract_stage_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "approved_by_employee_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "supersedes_work_log_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "labor_cost_rate_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "hourly_cost_amount_snapshot").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("work_log", "labor_cost_amount").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("labor_cost_rate", "employment_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("labor_cost_rate", "hourly_cost_amount").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("labor_cost_rate", "basis_document_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("labor_cost_rate", "approved_by_employee_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("labor_cost_rate", "approved_at").get("notnull")).intValue());
     }
 
     @Test
@@ -1179,6 +1216,129 @@ class MasterDataDemoTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("开票计划")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("收付款计划")));
+    }
+
+    @Test
+    void workLogApprovalAndRateSnapshot() throws Exception {
+        long companyId = companyForOrg("WL-CO", "工时公司");
+        long departmentId = department(companyId, "WL-FIN", "工时财务");
+        long workerId = employee("时迁", "E-WL-1");
+        long leaderId = employee("吴用", "E-WL-2");
+        long outsiderId = employee("白胜", "E-WL-3");
+        long employmentId = employ(workerId, companyId, departmentId, "GH-WL");
+        long assignmentId = organizations.form(workerId).getAssignments().get(0).getId();
+        long outsiderEmploymentId = employ(outsiderId, companyId, departmentId, "GH-OUT");
+        long outsiderAssignmentId = organizations.form(outsiderId).getAssignments().get(0).getId();
+        long projectId = projectService.save(project("WL-PJ", "工时工程", companyId));
+        ProjectDetailForm staffing = new ProjectDetailForm();
+        staffing.getMembers().add(member(workerId, employmentId, assignmentId, LocalDate.now().minusDays(10)));
+        projectService.saveDetails(projectId, staffing);
+
+        long rateId = laborCostRates.save(rate(employmentId, "200", 1, LocalDate.now().minusDays(30), leaderId));
+        long logId = workLogs.save(hours(workerId, employmentId, assignmentId, projectId, LocalDate.now(), "8", "寨墙施工", true));
+
+        assertTrue(messageOf(() -> workLogs.approve(logId, decision(workerId, null))).contains("自己"));
+        workLogs.approve(logId, decision(leaderId, "同意"));
+
+        WorkLog approved = workLogRepository.findById(logId).orElseThrow();
+        assertEquals(0, new BigDecimal("1600.00").compareTo(approved.laborCostAmount));
+        assertEquals(0, new BigDecimal("200").compareTo(approved.hourlyCostAmountSnapshot));
+        assertEquals(rateId, approved.laborCostRateId);
+        assertEquals("CNY", approved.laborCostCurrency);
+        assertEquals("通过", approved.approvalStatus);
+        assertEquals("有效", approved.recordStatus);
+        assertEquals(leaderId, approved.approvedByEmployeeId);
+        assertNotNull(approved.approvedAt);
+
+        mvc.perform(get("/work-logs"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("1600")));
+        mvc.perform(get("/work-logs/" + logId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("1600")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("成本快照")));
+        mvc.perform(get("/labor-cost-rates"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("200")));
+        mvc.perform(get("/work-logs/new")).andExpect(status().isOk());
+        mvc.perform(get("/labor-cost-rates/new")).andExpect(status().isOk());
+
+        LaborCostRate changed = laborCostRateRepository.findById(rateId).orElseThrow();
+        changed.hourlyCostAmount = new BigDecimal("300");
+        laborCostRateRepository.save(changed);
+        WorkLog afterPriceEdit = workLogRepository.findById(logId).orElseThrow();
+        assertEquals(0, new BigDecimal("1600.00").compareTo(afterPriceEdit.laborCostAmount));
+        assertEquals(0, new BigDecimal("200").compareTo(afterPriceEdit.hourlyCostAmountSnapshot));
+
+        laborCostRates.save(rate(employmentId, "300", 2, LocalDate.now().plusDays(1), leaderId));
+        WorkLog afterNewVersion = workLogRepository.findById(logId).orElseThrow();
+        assertEquals(0, new BigDecimal("1600.00").compareTo(afterNewVersion.laborCostAmount));
+        assertEquals(0, new BigDecimal("200").compareTo(afterNewVersion.hourlyCostAmountSnapshot));
+        assertEquals(rateId, afterNewVersion.laborCostRateId);
+
+        assertTrue(messageOf(() -> workLogs.save(hours(
+                outsiderId, outsiderEmploymentId, outsiderAssignmentId, projectId, LocalDate.now(), "4", "编外", true)))
+                .contains("不是该项目成员"));
+        assertTrue(messageOf(() -> workLogs.save(hours(
+                workerId, employmentId, assignmentId, projectId, LocalDate.now().minusDays(30), "1", "过早", true)))
+                .contains("有效期"));
+
+        long rejectedId = workLogs.save(hours(
+                workerId, employmentId, assignmentId, projectId, LocalDate.now(), "1", "待驳回", true));
+        assertTrue(messageOf(() -> workLogs.reject(rejectedId, decision(leaderId, null))).contains("驳回"));
+        workLogs.reject(rejectedId, decision(leaderId, "工时不实"));
+        WorkLog rejected = workLogRepository.findById(rejectedId).orElseThrow();
+        assertEquals("驳回", rejected.approvalStatus);
+        assertNull(rejected.laborCostAmount);
+        assertNull(rejected.hourlyCostAmountSnapshot);
+        assertEquals(leaderId, rejected.approvedByEmployeeId);
+        assertNotNull(rejected.approvedAt);
+        assertEquals("工时不实", rejected.approvalComment);
+        mvc.perform(get("/work-logs/approvals")).andExpect(status().isOk());
+    }
+
+    private LaborCostRateForm rate(long employmentId, String amount, int version, LocalDate from, long approverId) {
+        LaborCostRateForm form = new LaborCostRateForm();
+        form.setEmploymentId(employmentId);
+        form.setCostBasis("标准成本");
+        form.setHourlyCostAmount(new BigDecimal(amount));
+        form.setCurrency("CNY");
+        form.setRateVersionNumber(version);
+        form.setValidFrom(from);
+        form.setApprovalStatus("已批准");
+        form.setApprovedByEmployeeId(approverId);
+        form.setApprovedAt(LocalDateTime.now().minusDays(1));
+        return form;
+    }
+
+    private WorkLogForm hours(
+            long employeeId,
+            long employmentId,
+            long assignmentId,
+            long projectId,
+            LocalDate workDate,
+            String amount,
+            String description,
+            boolean submit) {
+        WorkLogForm form = new WorkLogForm();
+        form.setEmployeeId(employeeId);
+        form.setEmploymentId(employmentId);
+        form.setDepartmentAssignmentId(assignmentId);
+        form.setProjectId(projectId);
+        form.setWorkDate(workDate);
+        form.setHours(new BigDecimal(amount));
+        form.setWorkDescription(description);
+        form.setBillable(true);
+        form.setSubmitForApproval(submit);
+        return form;
+    }
+
+    private WorkLogDecisionForm decision(long approverId, String comment) {
+        WorkLogDecisionForm form = new WorkLogDecisionForm();
+        form.setApprovedByEmployeeId(approverId);
+        form.setApprovedAt(LocalDateTime.now());
+        form.setApprovalComment(comment);
+        return form;
     }
 
     private FulfillmentService.ProgressRow progressOf(long contractId) {

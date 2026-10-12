@@ -63,6 +63,19 @@ public final class Codes {
     public static final String ACCEPTANCE_REVOKED = "已撤销";
     public static final List<String> ACCEPTANCE_STATUS = List.of(ACCEPTANCE_EFFECTIVE, ACCEPTANCE_REVOKED);
     public static final List<String> ACCEPTANCE_RESULTS = List.of("通过", "不通过", "部分通过");
+    public static final String LABOR_BASIS_STANDARD = "标准成本";
+    public static final List<String> LABOR_COST_BASIS = List.of(LABOR_BASIS_STANDARD, "工资成本");
+    public static final String WORK_DRAFT = "草稿";
+    public static final String WORK_PENDING = "待审";
+    public static final String WORK_APPROVED = "通过";
+    public static final String WORK_REJECTED = "驳回";
+    public static final List<String> WORK_APPROVAL_STATUS = List.of(WORK_DRAFT, WORK_PENDING, WORK_APPROVED, WORK_REJECTED);
+    public static final String WORK_RECORD_EFFECTIVE = "有效";
+    public static final String WORK_RECORD_SUPERSEDED = "已被替代";
+    public static final String WORK_RECORD_VOID = "已作废";
+    public static final List<String> WORK_RECORD_STATUS = List.of(WORK_RECORD_EFFECTIVE, WORK_RECORD_SUPERSEDED, WORK_RECORD_VOID);
+    public static final String RATE_APPROVED = "已批准";
+    public static final List<String> RATE_APPROVAL_STATUS = List.of("草稿", "待审批", RATE_APPROVED, "驳回");
 
     private Codes() {
     }
