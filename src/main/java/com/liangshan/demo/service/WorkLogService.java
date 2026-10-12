@@ -6,6 +6,7 @@ import com.liangshan.demo.domain.ContractStage;
 import com.liangshan.demo.domain.Employee;
 import com.liangshan.demo.domain.EmployeeDepartmentAssignment;
 import com.liangshan.demo.domain.EmployeeEmployment;
+import com.liangshan.demo.domain.EmployeeReportingLine;
 import com.liangshan.demo.domain.LaborCostRate;
 import com.liangshan.demo.domain.Person;
 import com.liangshan.demo.domain.Project;
@@ -16,6 +17,7 @@ import com.liangshan.demo.repository.ContractRepository;
 import com.liangshan.demo.repository.ContractStageRepository;
 import com.liangshan.demo.repository.EmployeeDepartmentAssignmentRepository;
 import com.liangshan.demo.repository.EmployeeEmploymentRepository;
+import com.liangshan.demo.repository.EmployeeReportingLineRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.LaborCostRateRepository;
 import com.liangshan.demo.repository.PersonRepository;
@@ -49,6 +51,7 @@ public class WorkLogService {
     private final PersonRepository persons;
     private final EmployeeEmploymentRepository employments;
     private final EmployeeDepartmentAssignmentRepository assignments;
+    private final EmployeeReportingLineRepository reportingLines;
     private final ProjectRepository projects;
     private final ProjectMemberRepository members;
     private final ProjectContractRepository projectContracts;
@@ -343,6 +346,8 @@ public class WorkLogService {
             errors.add("approvedByEmployeeId", "请选择审批人");
         } else if (decision.getApprovedByEmployeeId().equals(log.employeeId)) {
             errors.add("approvedByEmployeeId", "不能审批自己的工时");
+        } else if (!administrativeManager(log, decision.getApprovedByEmployeeId())) {
+            errors.add("approvedByEmployeeId", "审批人不是该员工在工作日的行政上级");
         }
         if (decision == null || decision.getApprovedAt() == null) {
             errors.add("approvedAt", "请填写审批时间");
@@ -352,6 +357,31 @@ public class WorkLogService {
         } else if (decision != null && decision.getApprovalComment() != null && decision.getApprovalComment().length() > 1000) {
             errors.add("approvalComment", "审批意见过长");
         }
+    }
+
+    private boolean administrativeManager(WorkLog log, Long approverEmployeeId) {
+        if (log.departmentAssignmentId == null || log.workDate == null) {
+            return false;
+        }
+        for (EmployeeReportingLine line : reportingLines.findByEmployeeIdOrderByIdAsc(log.employeeId)) {
+            if (!Codes.REPORTING_ADMIN.equals(line.reportingType)) {
+                continue;
+            }
+            if (!log.departmentAssignmentId.equals(line.assignmentId)) {
+                continue;
+            }
+            if (!covers(line.validFrom, line.validTo, log.workDate)) {
+                continue;
+            }
+            EmployeeDepartmentAssignment managerAssignment = assignments.findById(line.managerAssignmentId).orElse(null);
+            if (managerAssignment == null || !approverEmployeeId.equals(managerAssignment.employeeId)) {
+                continue;
+            }
+            if (covers(managerAssignment.validFrom, managerAssignment.validTo, log.workDate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean cycle(Long selfId, Long targetId) {

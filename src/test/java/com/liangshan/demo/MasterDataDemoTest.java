@@ -1234,10 +1234,20 @@ class MasterDataDemoTest {
         staffing.getMembers().add(member(workerId, employmentId, assignmentId, LocalDate.now().minusDays(10)));
         projectService.saveDetails(projectId, staffing);
 
+        employ(leaderId, companyId, departmentId, "GH-LEAD");
+        long leaderAssignmentId = organizations.form(leaderId).getAssignments().get(0).getId();
+        EmployeeOrgForm reportsToLeader = organizations.form(workerId);
+        reportsToLeader.getReportingLines().add(reporting(
+                reportsToLeader.getAssignments().get(0).getRowKey(), "id:" + leaderAssignmentId, "行政"));
+        reportsToLeader.getReportingLines().add(reporting(
+                reportsToLeader.getAssignments().get(0).getRowKey(), "id:" + outsiderAssignmentId, "职能"));
+        organizations.save(workerId, reportsToLeader);
+
         long rateId = laborCostRates.save(rate(employmentId, "200", 1, LocalDate.now().minusDays(30), leaderId));
         long logId = workLogs.save(hours(workerId, employmentId, assignmentId, projectId, LocalDate.now(), "8", "寨墙施工", true));
 
         assertTrue(messageOf(() -> workLogs.approve(logId, decision(workerId, null))).contains("自己"));
+        assertTrue(messageOf(() -> workLogs.approve(logId, decision(outsiderId, "同意"))).contains("行政上级"));
         workLogs.approve(logId, decision(leaderId, "同意"));
 
         WorkLog approved = workLogRepository.findById(logId).orElseThrow();
