@@ -3,6 +3,8 @@ package com.liangshan.demo.service;
 import com.liangshan.demo.domain.Codes;
 import com.liangshan.demo.domain.CostOccurrence;
 import com.liangshan.demo.domain.Employee;
+import com.liangshan.demo.domain.EmployeeDepartmentAssignment;
+import com.liangshan.demo.domain.EmployeeReportingLine;
 import com.liangshan.demo.domain.ExpenseClaim;
 import com.liangshan.demo.domain.ExpenseClaimLine;
 import com.liangshan.demo.domain.PayableItem;
@@ -10,6 +12,8 @@ import com.liangshan.demo.domain.Payment;
 import com.liangshan.demo.domain.PaymentAllocation;
 import com.liangshan.demo.repository.CompanyRepository;
 import com.liangshan.demo.repository.CostOccurrenceRepository;
+import com.liangshan.demo.repository.EmployeeDepartmentAssignmentRepository;
+import com.liangshan.demo.repository.EmployeeReportingLineRepository;
 import com.liangshan.demo.repository.EmployeeRepository;
 import com.liangshan.demo.repository.ExpenseClaimLineRepository;
 import com.liangshan.demo.repository.ExpenseClaimRepository;
@@ -25,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -42,6 +47,8 @@ public class ExpenseClaimService {
     private final PaymentRepository payments;
     private final PaymentAllocationRepository paymentAllocations;
     private final EmployeeRepository employees;
+    private final EmployeeReportingLineRepository reportingLines;
+    private final EmployeeDepartmentAssignmentRepository assignments;
     private final CompanyRepository companies;
     private final SourceDocumentService documents;
 
@@ -333,6 +340,8 @@ public class ExpenseClaimService {
             errors.add("approvedByEmployeeId", "请选择审批人");
         } else if (decision.getApprovedByEmployeeId().equals(claim.claimantEmployeeId)) {
             errors.add("approvedByEmployeeId", "不能审批自己的报销");
+        } else if (!administrativeManager(claim, decision.getApprovedByEmployeeId())) {
+            errors.add("approvedByEmployeeId", "审批人不是该员工在提交日的行政上级");
         }
         if (decision == null || decision.getApprovedAt() == null) {
             errors.add("approvedAt", "请填写审批时间");
@@ -340,6 +349,29 @@ public class ExpenseClaimService {
         if (reasonRequired && (decision == null || Text.blankToNull(decision.getApprovalComment()) == null)) {
             errors.add("approvalComment", "驳回须填写原因");
         }
+    }
+
+    private boolean administrativeManager(ExpenseClaim claim, Long approverEmployeeId) {
+        if (claim.submittedAt == null) {
+            return false;
+        }
+        LocalDate day = claim.submittedAt.toLocalDate();
+        for (EmployeeReportingLine line : reportingLines.findByEmployeeIdOrderByIdAsc(claim.claimantEmployeeId)) {
+            if (!Codes.REPORTING_ADMIN.equals(line.reportingType)) {
+                continue;
+            }
+            if (!Periods.contains(line.validFrom, line.validTo, day, day.plusDays(1))) {
+                continue;
+            }
+            EmployeeDepartmentAssignment manager = assignments.findById(line.managerAssignmentId).orElse(null);
+            if (manager == null || !approverEmployeeId.equals(manager.employeeId)) {
+                continue;
+            }
+            if (Periods.contains(manager.validFrom, manager.validTo, day, day.plusDays(1))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void syncLines(ExpenseClaim claim, List<LineRow> rows) {

@@ -1365,9 +1365,22 @@ class MasterDataDemoTest {
     void expenseAllocationClaimAndSingleCost() throws Exception {
         long companyId = companyForOrg("EX-CO", "费用公司");
         long otherCompanyId = companyForOrg("EX-CO2", "另一采购公司");
+        long departmentId = department(companyId, "EX-FIN", "费用财务");
         long workerId = employee("阮小七", "E-EX-1");
         long leaderId = employee("公孙胜", "E-EX-2");
+        long outsiderId = employee("白胜", "E-EX-3");
         long personId = employeeRepository.findById(workerId).orElseThrow().personId;
+        employ(workerId, companyId, departmentId, "GH-EX");
+        employ(leaderId, companyId, departmentId, "GH-EX-LEAD");
+        long leaderAssignmentId = organizations.form(leaderId).getAssignments().get(0).getId();
+        employ(outsiderId, companyId, departmentId, "GH-EX-OUT");
+        long outsiderAssignmentId = organizations.form(outsiderId).getAssignments().get(0).getId();
+        EmployeeOrgForm reports = organizations.form(workerId);
+        reports.getReportingLines().add(reporting(
+                reports.getAssignments().get(0).getRowKey(), "id:" + leaderAssignmentId, "行政"));
+        reports.getReportingLines().add(reporting(
+                reports.getAssignments().get(0).getRowKey(), "id:" + outsiderAssignmentId, "职能"));
+        organizations.save(workerId, reports);
         long vendorPersonId = person("云厂商");
         SupplierForm archive = supplier("SP-CLOUD", "云服务商", companyId);
         archive.setPersonId(vendorPersonId);
@@ -1414,6 +1427,7 @@ class MasterDataDemoTest {
         line.setClaimedReimbursementAmount(new BigDecimal("500"));
         claim.getLines().add(line);
         long claimId = expenseClaims.save(claim);
+        assertTrue(messageOf(() -> expenseClaims.approve(claimId, decision(outsiderId, "同意报销"))).contains("行政上级"));
         expenseClaims.approve(claimId, decision(leaderId, "同意报销"));
 
         PayableItem payable = payables.findByExpenseClaimId(claimId).get(0);

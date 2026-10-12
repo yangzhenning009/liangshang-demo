@@ -8,7 +8,7 @@
     <div class="page-head">
         <div>
             <h1 th:text="${form.id == null} ? '新建报销' : '报销 ' + ${form.claimNumber}">新建报销</h1>
-            <p class="lede">类型至少包括项目费用和体检费用。申请金额不能超过该费用上的员工垫付。</p>
+            <p class="lede">类型至少包括项目费用和体检费用。申请金额不能超过该费用上的员工垫付。只有报销人在提交日有效的行政上级可以批准或驳回。</p>
         </div>
         <a class="btn secondary" th:href="@{/expense-claims}">返回列表</a>
     </div>
