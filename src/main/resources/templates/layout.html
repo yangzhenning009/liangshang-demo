@@ -40,6 +40,11 @@
             <span class="nav-label">报销管理</span>
             <a th:href="@{/costs}" th:classappend="${activeNav == 'costs'} ? 'active'">费用</a>
             <a th:href="@{/expense-claims}" th:classappend="${activeNav == 'claims'} ? 'active'">报销</a>
+            <span class="nav-label">财务管理</span>
+            <a th:href="@{/invoices}" th:classappend="${activeNav == 'invoices'} ? 'active'">发票</a>
+            <a th:href="@{/receivables}" th:classappend="${activeNav == 'receivables'} ? 'active'">应收</a>
+            <a th:href="@{/payables}" th:classappend="${activeNav == 'payables'} ? 'active'">应付</a>
+            <a th:href="@{/payments}" th:classappend="${activeNav == 'payments'} ? 'active'">收付款</a>
         </nav>
         <p class="side-note">主数据各自建档。关联只保存普通 ID，数据库不建外键。</p>
     </aside>

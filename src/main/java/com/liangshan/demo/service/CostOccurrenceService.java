@@ -63,6 +63,7 @@ public class CostOccurrenceService {
     private final ProjectRepository projects;
     private final ProjectContractRepository projectContracts;
     private final SourceDocumentService documents;
+    private final InvoiceService invoices;
 
     public record Row(
             Long id,
@@ -464,12 +465,16 @@ public class CostOccurrenceService {
             } else if (!lines.add(row.getInvoiceLineId())) {
                 errors.add(prefix + ".invoiceLineId", "同一费用不能重复匹配同一发票行");
             }
-            if (row.getMatchedExpenseGrossAmount() == null || row.getMatchedExpenseGrossAmount().signum() <= 0) {
-                errors.add(prefix + ".matchedExpenseGrossAmount", "匹配含税金额须大于 0");
+            if (row.getMatchedExpenseGrossAmount() == null || row.getMatchedExpenseGrossAmount().signum() == 0) {
+                errors.add(prefix + ".matchedExpenseGrossAmount", "匹配含税金额不能为 0");
             }
             String currency = row.getCurrency() == null ? form.getCurrency() : row.getCurrency();
             if (form.getCurrency() != null && currency != null && !form.getCurrency().equals(currency)) {
                 errors.add(prefix + ".currency", "发票匹配币种须与成本一致");
+            }
+            if (row.getInvoiceLineId() != null && row.getMatchedExpenseGrossAmount() != null) {
+                invoices.assertCostMatch(row.getInvoiceLineId(), row.getMatchedExpenseGrossAmount(), currency,
+                        row.getId(), errors, prefix + ".matchedExpenseGrossAmount");
             }
         }
     }

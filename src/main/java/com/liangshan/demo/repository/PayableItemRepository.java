@@ -16,4 +16,14 @@ public interface PayableItemRepository extends JpaRepository<PayableItem, Long> 
     boolean existsByConfirmedByEmployeeId(Long employeeId);
 
     boolean existsBySourceDocumentId(Long documentId);
+
+    boolean existsBySupplierId(Long supplierId);
+
+    boolean existsByProjectId(Long projectId);
+
+    boolean existsByContractId(Long contractId);
+
+    List<PayableItem> findAllByOrderByIdDesc();
+
+    List<PayableItem> findByContractPaymentScheduleId(Long contractPaymentScheduleId);
 }

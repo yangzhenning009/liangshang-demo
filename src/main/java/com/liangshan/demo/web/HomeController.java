@@ -10,6 +10,7 @@ import com.liangshan.demo.repository.ContractRepository;
 import com.liangshan.demo.repository.CostOccurrenceRepository;
 import com.liangshan.demo.repository.WorkLogRepository;
 import com.liangshan.demo.repository.ProjectRepository;
+import com.liangshan.demo.repository.ReceivableItemRepository;
 import com.liangshan.demo.repository.SupplierRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,6 +31,7 @@ public class HomeController {
     private final ContractRepository contractRepository;
     private final WorkLogRepository workLogs;
     private final CostOccurrenceRepository costs;
+    private final ReceivableItemRepository receivables;
 
     public HomeController(
             LegalPersonRepository legalPersons,
@@ -42,7 +44,8 @@ public class HomeController {
             ProjectRepository projectRepository,
             ContractRepository contractRepository,
             WorkLogRepository workLogs,
-            CostOccurrenceRepository costs) {
+            CostOccurrenceRepository costs,
+            ReceivableItemRepository receivables) {
         this.legalPersons = legalPersons;
         this.companies = companies;
         this.persons = persons;
@@ -54,6 +57,7 @@ public class HomeController {
         this.contractRepository = contractRepository;
         this.workLogs = workLogs;
         this.costs = costs;
+        this.receivables = receivables;
     }
 
     @ModelAttribute("activeNav")
@@ -74,6 +78,7 @@ public class HomeController {
         model.addAttribute("contractCount", contractRepository.count());
         model.addAttribute("workLogCount", workLogs.count());
         model.addAttribute("costCount", costs.count());
+        model.addAttribute("receivableCount", receivables.count());
         return "home";
     }
 }

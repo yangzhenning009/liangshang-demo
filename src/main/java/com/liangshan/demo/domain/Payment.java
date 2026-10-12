@@ -15,8 +15,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 付款的最小实现，只用于报销付到员工本人。银行快照和完整收付页面留在后续包。
- * 付款不生成新的成本。
+ * 收付款。报销付款、合同收款、代付和退款都写在这张表。付款不生成新的成本。
+ * 关联 ID 是普通 Long，不建外键。
  */
 @Entity
 @Table(name = "payment", indexes = {
@@ -24,7 +24,9 @@ import java.time.LocalDateTime;
         @Index(name = "idx_payment_payer_company", columnList = "payer_company_id"),
         @Index(name = "idx_payment_payee_person", columnList = "payee_person_id"),
         @Index(name = "idx_payment_employee", columnList = "related_employee_id"),
-        @Index(name = "idx_payment_refund", columnList = "refund_of_payment_id")
+        @Index(name = "idx_payment_refund", columnList = "refund_of_payment_id"),
+        @Index(name = "idx_payment_for_company", columnList = "payment_for_company_id"),
+        @Index(name = "idx_payment_agency_document", columnList = "agency_basis_document_id")
 })
 @Getter
 public class Payment extends Auditable {
@@ -51,6 +53,60 @@ public class Payment extends Auditable {
 
     @Column(name = "payee_person_id")
     public Long payeePersonId;
+
+    @Column(name = "payment_for_company_id")
+    public Long paymentForCompanyId;
+
+    @Column(name = "payment_for_legal_person_id")
+    public Long paymentForLegalPersonId;
+
+    @Column(name = "payment_for_person_id")
+    public Long paymentForPersonId;
+
+    @Column(name = "receipt_for_company_id")
+    public Long receiptForCompanyId;
+
+    @Column(name = "receipt_for_legal_person_id")
+    public Long receiptForLegalPersonId;
+
+    @Column(name = "receipt_for_person_id")
+    public Long receiptForPersonId;
+
+    @Column(name = "agency_basis_document_id")
+    public Long agencyBasisDocumentId;
+
+    @Column(name = "payer_company_bank_account_id")
+    public Long payerCompanyBankAccountId;
+
+    @Column(name = "payee_company_bank_account_id")
+    public Long payeeCompanyBankAccountId;
+
+    @Column(name = "bank_fee_amount", precision = 18, scale = 2)
+    public BigDecimal bankFeeAmount;
+
+    @Column(name = "payer_bank_account_number_snapshot", length = 64)
+    public String payerBankAccountNumberSnapshot;
+
+    @Column(name = "payer_bank_account_name_snapshot", length = 200)
+    public String payerBankAccountNameSnapshot;
+
+    @Column(name = "payer_bank_name_snapshot", length = 200)
+    public String payerBankNameSnapshot;
+
+    @Column(name = "payee_bank_account_number_snapshot", length = 64)
+    public String payeeBankAccountNumberSnapshot;
+
+    @Column(name = "payee_bank_account_name_snapshot", length = 200)
+    public String payeeBankAccountNameSnapshot;
+
+    @Column(name = "payee_bank_name_snapshot", length = 200)
+    public String payeeBankNameSnapshot;
+
+    @Column(name = "bank_transaction_number", length = 64)
+    public String bankTransactionNumber;
+
+    @Column(name = "payment_platform_transaction_number", length = 64)
+    public String paymentPlatformTransactionNumber;
 
     @Column(name = "payment_number", nullable = false, length = 64)
     public String paymentNumber;

@@ -15,8 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 应付项的最小实现，供报销批准后形成对员工自然人的付款义务。
- * 发票、调整和完整资金页面留在后续包。关联 ID 不建外键。
+ * 应付项。员工报销、采购和合同计划确认都写在这张表。关联 ID 不建外键。
  */
 @Entity
 @Table(name = "payable_item", indexes = {

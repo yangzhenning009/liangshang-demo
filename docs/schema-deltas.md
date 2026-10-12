@@ -54,17 +54,14 @@ Schema 给出字段、未穷尽取值的，当前页面只用下列字符串。�
 | `cost_occurrence.cost_basis` | `实际费用`、`标准人工成本`、`工资成本` |
 | `expense_claim.approval_status` | `草稿`、`待审`、`通过`、`驳回` |
 
-## 尚未按 Schema 建全的列
+## 发票与收付
 
-`payment` 目前只保存收付款双方、单号、种类、用途、关联员工、退款原单、支付时间、金额、币种、渠道、核对人、银行起息日、来源材料和状态。下列 Schema 字段还没有列，后续资金包补上，不另建第二张付款表：
+`payment` 已补上 Schema 中的被代付、被代收、代收付依据、银行账户、手续费、账户快照和流水号，仍是同一张表。
 
-- 被代付对象：`payment_for_company_id`、`payment_for_legal_person_id`、`payment_for_person_id`
-- 被代收对象：`receipt_for_company_id`、`receipt_for_legal_person_id`、`receipt_for_person_id`
-- `agency_basis_document_id`
-- `payer_company_bank_account_id`、`payee_company_bank_account_id`
-- `bank_fee_amount`
-- 付款账户快照：`payer_bank_account_number_snapshot`、`payer_bank_account_name_snapshot`、`payer_bank_name_snapshot`
-- 收款账户快照：`payee_bank_account_number_snapshot`、`payee_bank_account_name_snapshot`、`payee_bank_name_snapshot`
-- `bank_transaction_number`、`payment_platform_transaction_number`
+`invoice`、`invoice_line`、`invoice_line_allocation`、`receivable_item`、`receivable_adjustment`、`payable_adjustment` 按 Schema 建表。关联 ID 保持可空，不建外键。
 
-`invoice`、`invoice_line`、`invoice_line_allocation`、`receivable_item`、`receivable_adjustment`、`payable_adjustment` 尚未建表。`cost_invoice_line` 已能保存发票行号，但还没有发票行对象，因此还不能按票面含税金额检查匹配上限。
+`cost_invoice_line` 的匹配金额按发票行含税金额封顶，符号须与票面一致，币种须与发票一致。
+
+确认应收时，页面上的开票计划只用来推算到期日，不另加 `receivable_item.billing_schedule_id`。Schema 的应收也没有这一列。相对触发的实际验收或发票，以及算出的到期日，写在应收或应付上。
+
+发票可以覆盖公司或法人债权人的结算项。开票方不能是自然人，因此债权人是自然人的应付（例如员工报销）不能从发票行关联。

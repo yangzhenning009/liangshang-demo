@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>发票 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>发票</h1>
+            <p class="lede">发票行可以覆盖应收或应付，覆盖本身不增加本金，也不代替收款。</p>
+        </div>
+        <a class="btn" th:href="@{/invoices/new}">登记发票</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>号码</th>
+                    <th>字色</th>
+                    <th>含税</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="5" class="empty">还没有发票。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.invoiceNumber}">INV-1</td>
+                    <td th:text="${item.invoiceColor}">蓝字</td>
+                    <td th:text="${item.grossAmount + ' ' + item.currency}">60000</td>
+                    <td><span class="badge" th:text="${item.status}">草稿</span></td>
+                    <td class="actions"><a th:href="@{/invoices/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

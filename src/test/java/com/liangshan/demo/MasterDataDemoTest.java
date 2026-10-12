@@ -32,9 +32,14 @@ import com.liangshan.demo.domain.ContractTermVersion;
 import com.liangshan.demo.domain.ProjectBudgetVersion;
 import com.liangshan.demo.domain.ProjectVersion;
 import com.liangshan.demo.domain.PayableItem;
+import com.liangshan.demo.domain.ReceivableItem;
 import com.liangshan.demo.repository.CostAllocationRepository;
 import com.liangshan.demo.repository.CostOccurrenceRepository;
+import com.liangshan.demo.repository.ContractBillingScheduleRepository;
+import com.liangshan.demo.repository.ContractPaymentScheduleRepository;
+import com.liangshan.demo.repository.InvoiceLineRepository;
 import com.liangshan.demo.repository.PayableItemRepository;
+import com.liangshan.demo.repository.ReceivableItemRepository;
 import com.liangshan.demo.repository.PaymentAllocationRepository;
 import com.liangshan.demo.repository.LaborCostRateRepository;
 import com.liangshan.demo.repository.WorkLogRepository;
@@ -52,6 +57,8 @@ import com.liangshan.demo.repository.ProjectBudgetVersionRepository;
 import com.liangshan.demo.repository.ProjectRepository;
 import com.liangshan.demo.repository.ProjectVersionRepository;
 import com.liangshan.demo.service.CostOccurrenceService;
+import com.liangshan.demo.service.FundsService;
+import com.liangshan.demo.service.InvoiceService;
 import com.liangshan.demo.service.ExpenseClaimService;
 import com.liangshan.demo.service.LaborCostRateService;
 import com.liangshan.demo.service.WorkLogService;
@@ -72,6 +79,10 @@ import com.liangshan.demo.web.form.SupplierDetailForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.ContactForm;
 import com.liangshan.demo.web.form.SupplierDetailForm.QualificationForm;
 import com.liangshan.demo.web.form.CostForm;
+import com.liangshan.demo.web.form.InvoiceForm;
+import com.liangshan.demo.web.form.PayableForm;
+import com.liangshan.demo.web.form.PaymentForm;
+import com.liangshan.demo.web.form.ReceivableForm;
 import com.liangshan.demo.web.form.ExpenseClaimForm;
 import com.liangshan.demo.web.form.LaborCostRateForm;
 import com.liangshan.demo.web.form.WorkLogDecisionForm;
@@ -228,6 +239,18 @@ class MasterDataDemoTest {
     private PayableItemRepository payables;
     @Autowired
     private PaymentAllocationRepository paymentAllocations;
+    @Autowired
+    private FundsService funds;
+    @Autowired
+    private InvoiceService invoiceService;
+    @Autowired
+    private ReceivableItemRepository receivableItems;
+    @Autowired
+    private InvoiceLineRepository invoiceLineRepository;
+    @Autowired
+    private ContractPaymentScheduleRepository paymentSchedules;
+    @Autowired
+    private ContractBillingScheduleRepository billingSchedules;
 
     @AfterEach
     void clearSupplierReferences() {
@@ -305,7 +328,13 @@ class MasterDataDemoTest {
                 "expense_claim_line",
                 "payable_item",
                 "payment",
-                "payment_allocation")));
+                "payment_allocation",
+                "invoice",
+                "invoice_line",
+                "invoice_line_allocation",
+                "receivable_item",
+                "receivable_adjustment",
+                "payable_adjustment")));
         assertEquals("integer", String.valueOf(column("contract_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals("integer", String.valueOf(column("contract_stage_term_version", "id").get("type")).toLowerCase(Locale.ROOT));
         assertEquals(1, ((Number) column("contract", "contract_number").get("notnull")).intValue());
@@ -399,6 +428,28 @@ class MasterDataDemoTest {
         assertEquals(0, ((Number) column("payable_item", "expense_claim_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("payment", "payee_person_id").get("notnull")).intValue());
         assertEquals(0, ((Number) column("payment_allocation", "payable_item_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment_allocation", "receivable_item_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment", "payment_for_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment", "payment_for_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment", "agency_basis_document_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payment", "payer_bank_account_number_snapshot").get("notnull")).intValue());
+        assertEquals("integer", String.valueOf(column("invoice", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("invoice_line", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("receivable_item", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("receivable_adjustment", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals("integer", String.valueOf(column("payable_adjustment", "id").get("type")).toLowerCase(Locale.ROOT));
+        assertEquals(0, ((Number) column("invoice", "issuer_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("invoice", "recipient_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("invoice", "source_document_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("invoice_line_allocation", "receivable_item_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("invoice_line_allocation", "payable_item_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("receivable_item", "creditor_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("receivable_item", "debtor_company_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("receivable_item", "debtor_person_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("receivable_item", "source_document_id").get("notnull")).intValue());
+        assertEquals(0, ((Number) column("payable_item", "source_document_id").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("invoice", "invoice_number").get("notnull")).intValue());
+        assertEquals(1, ((Number) column("receivable_item", "receivable_number").get("notnull")).intValue());
         assertEquals(1, ((Number) column("cost_invoice_line", "invoice_line_id").get("notnull")).intValue());
         assertEquals(1, ((Number) column("labor_cost_rate", "employment_id").get("notnull")).intValue());
         assertEquals(1, ((Number) column("labor_cost_rate", "hourly_cost_amount").get("notnull")).intValue());
@@ -1462,6 +1513,296 @@ class MasterDataDemoTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("500")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("体检费用")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(payable.payableNumber)));
+    }
+
+    @Test
+    void invoiceReceiptRefundAndDueDate() throws Exception {
+        long seller = companyForOrg("AR-SELL", "寨墙卖方");
+        long buyer = companyForOrg("AR-BUY", "寨墙买方");
+        long third = companyForOrg("AR-3RD", "代付公司");
+        long otherBuyer = companyForOrg("AR-OTH", "另一采购公司");
+        long clerk = employee("花荣", "E-AR-1");
+        long vendorPerson = person("石料户");
+        SourceDocumentForm document = new SourceDocumentForm();
+        document.setDocumentType("合同");
+        document.setDocumentNumber("DOC-AR-1");
+        document.setIssuerCompanyId(seller);
+        document.setStatus("有效");
+        long documentId = sourceDocuments.save(document);
+        SourceDocumentForm agency = new SourceDocumentForm();
+        agency.setDocumentType("代付说明");
+        agency.setDocumentNumber("DOC-AR-AGENCY");
+        agency.setIssuerCompanyId(third);
+        agency.setStatus("有效");
+        long agencyId = sourceDocuments.save(agency);
+
+        ContractForm header = contract("CT-AR", "寨墙销售", "销售", buyer, vendorPerson);
+        header.setSellerPersonId(null);
+        header.setSellerCompanyId(seller);
+        header.setSellerNameSnapshot("寨墙卖方");
+        long contractId = contractService.save(header);
+        ContractDetailForm details = new ContractDetailForm();
+        LineForm line = new LineForm();
+        line.setLineNumber(1);
+        line.setItemName("寨墙");
+        line.setUnit("项");
+        details.getLines().add(line);
+        details.getStages().add(stage("S1", 1));
+        DeliverableForm deliverable = new DeliverableForm();
+        deliverable.setStageCode("S1");
+        deliverable.setLineNumber(1);
+        deliverable.setDeliverableCode("DL-AR");
+        deliverable.setDeliverableName("寨墙完工");
+        deliverable.setUnit("项");
+        deliverable.setPlannedQuantity(new BigDecimal("10"));
+        deliverable.setAcceptanceCriteria("可通行");
+        deliverable.setPlannedDeliveryDate(LocalDate.of(2026, 2, 1));
+        details.getDeliverables().add(deliverable);
+        contractService.saveDetails(contractId, details);
+        long projectId = projectService.save(project("AR-PJ", "寨墙工程", seller));
+        contractService.linkProject(projectId, contractId, "销售交付");
+        long termId = contractTerms.findByContractIdOrderByVersionNumberAsc(contractId).get(0).id;
+        long stageId = contractStages.findByContractIdOrderBySequenceNoAsc(contractId).get(0).id;
+        long deliverableId = contractDeliverables.findByStageTermVersionIdOrderByIdAsc(
+                contractStageTerms.findByContractStageIdOrderByVersionNumberAsc(stageId).get(0).id).get(0).id;
+        ContractPlanForm plans = new ContractPlanForm();
+        ContractPlanForm.BillingRow billing = billing(1, termId, stageId, "阶段验收", "800.00");
+        billing.setDaysAfterTrigger(15);
+        plans.getBillings().add(billing);
+        ContractPlanForm.PaymentRow first = payment(1, termId, stageId, "进度款", "阶段验收", "1000.00");
+        first.setDaysAfterTrigger(30);
+        plans.getPayments().add(first);
+        ContractPlanForm.PaymentRow second = payment(2, termId, stageId, "尾款", "阶段验收", "500.00");
+        second.setDaysAfterTrigger(30);
+        plans.getPayments().add(second);
+        fulfillment.savePlans(contractId, plans);
+        DeliveryEventForm submitted = delivery(projectId, vendorPerson, "DV-AR", deliverableId, "10");
+        submitted.setSubmittedAt(LocalDateTime.of(2026, 1, 9, 9, 0));
+        long deliveryId = fulfillment.recordDelivery(contractId, submitted);
+        long deliveryLineId = deliveryLines.findByDeliveryEventIdOrderByIdAsc(deliveryId).get(0).id;
+        long acceptanceId = fulfillment.recordAcceptance(contractId, acceptance(
+                deliveryId, buyer, "AC-AR", LocalDateTime.of(2026, 1, 10, 9, 0),
+                deliveryLineId, "10", "10", "0", null));
+
+        ReceivableForm receivable = new ReceivableForm();
+        receivable.setReceivableNumber("AR-60");
+        receivable.setCreditorCompanyId(seller);
+        receivable.setDebtorCompanyId(buyer);
+        receivable.setReceivablePurpose("阶段款");
+        receivable.setReceivableAmount(new BigDecimal("60000"));
+        receivable.setCurrency("CNY");
+        receivable.setStatus("已确认");
+        receivable.setConfirmedByEmployeeId(clerk);
+        receivable.setConfirmedAt(LocalDateTime.of(2026, 3, 1, 9, 0));
+        receivable.setSourceDocumentId(documentId);
+        long receivableId = funds.saveReceivable(receivable);
+        long receivableCount = receivableItems.count();
+
+        long receiptId = funds.savePayment(receipt(buyer, seller, null, null, "PAY-30", "30000", clerk, receivableId, null));
+        assertEquals(0, new BigDecimal("30000").compareTo(funds.outstandingReceivable(receivableId)));
+        assertEquals(0, new BigDecimal("30000").compareTo(funds.settledReceivable(receivableId)));
+        mvc.perform(get("/receivables/" + receivableId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("未结")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("30000")));
+
+        InvoiceForm invoice = new InvoiceForm();
+        invoice.setInvoiceNumber("INV-60");
+        invoice.setInvoiceType("增值税普通发票");
+        invoice.setInvoiceMedium("电子");
+        invoice.setInvoiceColor("蓝字");
+        invoice.setInvoiceNetAmount(new BigDecimal("60000"));
+        invoice.setInvoiceTaxAmount(BigDecimal.ZERO);
+        invoice.setInvoiceGrossAmount(new BigDecimal("60000"));
+        invoice.setCurrency("CNY");
+        invoice.setStatus("已开具");
+        invoice.setIssuedAt(LocalDate.of(2026, 3, 2));
+        invoice.setIssuerCompanyId(seller);
+        invoice.setRecipientCompanyId(buyer);
+        invoice.setIssuerNameSnapshot("寨墙卖方");
+        invoice.setIssuerTaxpayerIdSnapshot("91370000ARSELL");
+        invoice.setRecipientNameSnapshot("寨墙买方");
+        invoice.setSourceDocumentId(documentId);
+        InvoiceForm.LineRow invoiceLine = new InvoiceForm.LineRow();
+        invoiceLine.setLineNumber(1);
+        invoiceLine.setItemName("阶段款");
+        invoiceLine.setTaxTreatment("免税");
+        invoiceLine.setNetAmount(new BigDecimal("60000"));
+        invoiceLine.setTaxAmount(BigDecimal.ZERO);
+        invoiceLine.setGrossAmount(new BigDecimal("60000"));
+        invoice.getLines().add(invoiceLine);
+        InvoiceForm.AllocationRow cover = new InvoiceForm.AllocationRow();
+        cover.setLineNumber(1);
+        cover.setReceivableItemId(receivableId);
+        cover.setAllocatedAmount(new BigDecimal("60000"));
+        cover.setCurrency("CNY");
+        cover.setAllocationBasis("含税");
+        invoice.getAllocations().add(cover);
+        long invoiceId = invoiceService.save(invoice);
+        ReceivableItem stored = receivableItems.findById(receivableId).orElseThrow();
+        assertEquals(receivableCount, receivableItems.count());
+        assertEquals(0, new BigDecimal("60000").compareTo(stored.receivableAmount));
+        assertEquals(0, new BigDecimal("30000").compareTo(funds.outstandingReceivable(receivableId)));
+        long invoiceLineId = invoiceLineRepository.findByInvoiceIdOrderByLineNumberAscIdAsc(invoiceId).get(0).id;
+        CostForm over = spend(seller, "MATCH-OVER", "60001", "其他", null, clerk, null);
+        CostForm.InvoiceRow match = new CostForm.InvoiceRow();
+        match.setInvoiceLineId(invoiceLineId);
+        match.setMatchedExpenseGrossAmount(new BigDecimal("60001"));
+        match.setCurrency("CNY");
+        over.getInvoiceLines().add(match);
+        assertTrue(messageOf(() -> costOccurrences.save(over)).contains("超过"));
+
+        long applyId = paymentAllocations.findByReceivableItemId(receivableId).get(0).id;
+        PaymentForm refund = receipt(seller, buyer, null, null, "PAY-REF", "10000", clerk, receivableId, applyId);
+        refund.setPaymentKind("退款");
+        refund.setRefundOfPaymentId(receiptId);
+        refund.getAllocations().get(0).setSettlementAction("reverse");
+        funds.savePayment(refund);
+        assertEquals(0, new BigDecimal("20000").compareTo(funds.settledReceivable(receivableId)));
+        assertEquals(0, new BigDecimal("40000").compareTo(funds.outstandingReceivable(receivableId)));
+        mvc.perform(get("/receivables/" + receivableId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("40000")));
+
+        funds.savePayment(receipt(third, seller, buyer, agencyId, "PAY-3RD", "40000", clerk, receivableId, null));
+        stored = receivableItems.findById(receivableId).orElseThrow();
+        assertEquals(0, new BigDecimal("60000").compareTo(stored.receivableAmount));
+        assertEquals(0, new BigDecimal("60000").compareTo(funds.settledReceivable(receivableId)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(funds.outstandingReceivable(receivableId)));
+        mvc.perform(get("/receivables"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("AR-60")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("60000")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("未结")));
+        mvc.perform(get("/invoices"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("INV-60")));
+        mvc.perform(get("/payments"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("PAY-30")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("30000")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("PAY-REF")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("10000")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("PAY-3RD")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("40000")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("退款")));
+
+        long payScheduleId = paymentSchedules.findByContractIdOrderByScheduleNumberAsc(contractId).get(0).id;
+        long secondScheduleId = paymentSchedules.findByContractIdOrderByScheduleNumberAsc(contractId).get(1).id;
+        long billingId = billingSchedules.findByContractIdOrderByScheduleNumberAsc(contractId).get(0).id;
+        ReceivableForm fromPayment = confirmedReceivable("AR-DUE", seller, buyer, clerk, documentId);
+        fromPayment.setContractPaymentScheduleId(payScheduleId);
+        fromPayment.setTriggerAcceptanceEventId(acceptanceId);
+        fromPayment.setReceivableAmount(null);
+        long dueReceivableId = funds.saveReceivable(fromPayment);
+        ReceivableItem dueReceivable = receivableItems.findById(dueReceivableId).orElseThrow();
+        assertEquals(LocalDate.of(2026, 2, 9), dueReceivable.dueDate);
+        assertEquals(acceptanceId, dueReceivable.triggerAcceptanceEventId);
+        assertEquals(0, new BigDecimal("1000").compareTo(dueReceivable.receivableAmount));
+
+        ReceivableForm fromBilling = confirmedReceivable("AR-BILL", seller, buyer, clerk, documentId);
+        fromBilling.setBillingScheduleId(billingId);
+        fromBilling.setTriggerAcceptanceEventId(acceptanceId);
+        fromBilling.setReceivableAmount(null);
+        long billedId = funds.saveReceivable(fromBilling);
+        assertEquals(LocalDate.of(2026, 1, 25), receivableItems.findById(billedId).orElseThrow().dueDate);
+
+        PayableForm fromPayableSchedule = new PayableForm();
+        fromPayableSchedule.setPayableNumber("AP-DUE");
+        fromPayableSchedule.setDebtorCompanyId(seller);
+        fromPayableSchedule.setCreditorPersonId(vendorPerson);
+        fromPayableSchedule.setPayablePurpose("其他");
+        fromPayableSchedule.setCurrency("CNY");
+        fromPayableSchedule.setStatus("已确认");
+        fromPayableSchedule.setConfirmedByEmployeeId(clerk);
+        fromPayableSchedule.setConfirmedAt(LocalDateTime.of(2026, 1, 12, 9, 0));
+        fromPayableSchedule.setSourceDocumentId(documentId);
+        fromPayableSchedule.setContractPaymentScheduleId(secondScheduleId);
+        fromPayableSchedule.setTriggerAcceptanceEventId(acceptanceId);
+        long duePayableId = funds.savePayable(fromPayableSchedule);
+        PayableItem duePayable = payables.findById(duePayableId).orElseThrow();
+        assertEquals(LocalDate.of(2026, 2, 9), duePayable.dueDate);
+        assertEquals(acceptanceId, duePayable.triggerAcceptanceEventId);
+        mvc.perform(get("/payables/" + duePayableId + "/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("2026-02-09")));
+
+        SupplierForm archive = supplier("SP-AR", "寨墙石料", seller);
+        archive.setPersonId(vendorPerson);
+        long supplierId = supplierService.save(archive);
+        PayableForm supplierPayable = new PayableForm();
+        supplierPayable.setPayableNumber("AP-STONE");
+        supplierPayable.setDebtorCompanyId(seller);
+        supplierPayable.setCreditorPersonId(vendorPerson);
+        supplierPayable.setSupplierId(supplierId);
+        supplierPayable.setPayablePurpose("采购款");
+        supplierPayable.setPayableAmount(new BigDecimal("200"));
+        supplierPayable.setCurrency("CNY");
+        supplierPayable.setStatus("已确认");
+        supplierPayable.setConfirmedByEmployeeId(clerk);
+        supplierPayable.setConfirmedAt(LocalDateTime.of(2026, 3, 3, 9, 0));
+        supplierPayable.setSourceDocumentId(documentId);
+        funds.savePayable(supplierPayable);
+        SupplierForm locked = supplierService.form(supplierId);
+        locked.setPurchasingCompanyId(otherBuyer);
+        assertTrue(messageOf(() -> supplierService.save(locked)).contains("不能更换"));
+        assertTrue(messageOf(() -> supplierService.delete(supplierId)).contains("不能删除"));
+        mvc.perform(get("/payables"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("AP-STONE")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("未结")));
+    }
+
+    private ReceivableForm confirmedReceivable(String number, long creditor, long debtor, long clerk, long documentId) {
+        ReceivableForm form = new ReceivableForm();
+        form.setReceivableNumber(number);
+        form.setCreditorCompanyId(creditor);
+        form.setDebtorCompanyId(debtor);
+        form.setReceivablePurpose("阶段款");
+        form.setCurrency("CNY");
+        form.setStatus("已确认");
+        form.setConfirmedByEmployeeId(clerk);
+        form.setConfirmedAt(LocalDateTime.of(2026, 1, 12, 9, 0));
+        form.setSourceDocumentId(documentId);
+        return form;
+    }
+
+    private PaymentForm receipt(
+            long payerCompanyId,
+            long payeeCompanyId,
+            Long paymentForCompanyId,
+            Long agencyDocumentId,
+            String number,
+            String amount,
+            long clerk,
+            long receivableId,
+            Long reversesAllocationId) {
+        PaymentForm form = new PaymentForm();
+        form.setPayerCompanyId(payerCompanyId);
+        form.setPayeeCompanyId(payeeCompanyId);
+        form.setPaymentForCompanyId(paymentForCompanyId);
+        form.setAgencyBasisDocumentId(agencyDocumentId);
+        form.setPaymentNumber(number);
+        form.setPaymentKind("普通收付");
+        form.setPaymentPurpose("合同款");
+        form.setPaidAt(LocalDateTime.of(2026, 3, 4, 9, 0));
+        form.setPaymentAmount(new BigDecimal(amount));
+        form.setCurrency("CNY");
+        form.setPaymentChannel("银行转账");
+        form.setConfirmedByEmployeeId(clerk);
+        form.setConfirmedAt(LocalDateTime.of(2026, 3, 4, 10, 0));
+        form.setStatus("已确认");
+        PaymentForm.AllocationRow row = new PaymentForm.AllocationRow();
+        row.setReceivableItemId(receivableId);
+        row.setSettlementAmount(new BigDecimal(amount));
+        row.setCurrency("CNY");
+        row.setSettlementAction("apply");
+        row.setReversesAllocationId(reversesAllocationId);
+        row.setAllocatedAt(LocalDateTime.of(2026, 3, 4, 10, 0));
+        row.setAllocatedByEmployeeId(clerk);
+        row.setStatus("已确认");
+        form.getAllocations().add(row);
+        return form;
     }
 
     private CostForm spend(

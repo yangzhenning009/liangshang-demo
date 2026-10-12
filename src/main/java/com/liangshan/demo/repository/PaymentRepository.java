@@ -7,5 +7,17 @@ import java.util.List;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
+    List<Payment> findAllByOrderByPaidAtDescIdDesc();
+
     List<Payment> findByPaymentNumber(String paymentNumber);
+
+    List<Payment> findByRefundOfPaymentId(Long refundOfPaymentId);
+
+    boolean existsByRelatedEmployeeId(Long employeeId);
+
+    boolean existsByConfirmedByEmployeeId(Long employeeId);
+
+    boolean existsBySourceDocumentId(Long documentId);
+
+    boolean existsByAgencyBasisDocumentId(Long documentId);
 }

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>发票 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '登记发票' : '发票 ' + ${form.invoiceNumber}">登记发票</h1>
+            <p class="lede">开票方在公司和法人中恰好一个。受票方在公司、法人、自然人中恰好一个。关联应收或应付时用含税口径，且不超过该行票面。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/invoices}">返回列表</a>
+    </div>
+    <form class="panel" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/invoices} : @{/invoices/{id}(id=${form.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">发票号码<input th:field="*{invoiceNumber}"></label>
+            <label class="field">发票代码<input th:field="*{invoiceCode}"></label>
+            <label class="field">种类
+                <select th:field="*{invoiceType}">
+                    <option th:each="item : ${invoiceTypes}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">介质
+                <select th:field="*{invoiceMedium}">
+                    <option th:each="item : ${invoiceMediums}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">字色
+                <select th:field="*{invoiceColor}">
+                    <option th:each="item : ${invoiceColors}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">原发票
+                <select th:field="*{originalInvoiceId}">
+                    <option value="">蓝字不选</option>
+                    <option th:each="choice : ${invoiceChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">不含税<input type="number" step="0.01" th:field="*{invoiceNetAmount}"></label>
+            <label class="field">税额<input type="number" step="0.01" th:field="*{invoiceTaxAmount}"></label>
+            <label class="field">含税<input type="number" step="0.01" th:field="*{invoiceGrossAmount}"></label>
+            <label class="field">币种<input th:field="*{currency}" placeholder="如 CNY"></label>
+            <label class="field">开票日<input type="date" th:field="*{issuedAt}"></label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="item : ${invoiceStatuses}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">开票公司
+                <select th:field="*{issuerCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${companyChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">开票法人
+                <select th:field="*{issuerLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${legalPersonChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">受票公司
+                <select th:field="*{recipientCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${companyChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">受票法人
+                <select th:field="*{recipientLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${legalPersonChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">受票自然人
+                <select th:field="*{recipientPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${personChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">开票方名称<input th:field="*{issuerNameSnapshot}"></label>
+            <label class="field">开票方税号<input th:field="*{issuerTaxpayerIdSnapshot}"></label>
+            <label class="field">受票方名称<input th:field="*{recipientNameSnapshot}"></label>
+            <label class="field">受票方税号<input th:field="*{recipientTaxpayerIdSnapshot}"></label>
+            <label class="field">依据材料
+                <select th:replace="~{fragments/document-select :: bound('sourceDocumentId')}"></select>
+            </label>
+            <label class="field">核对人
+                <select th:field="*{verifiedByEmployeeId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">核对时间<input type="datetime-local" th:field="*{invoiceVerifiedAt}"></label>
+            <label class="field">核对结果<input th:field="*{verificationResult}"></label>
+            <label class="field span-2">核对说明<input th:field="*{verificationComment}"></label>
+            <label class="field">作废时间<input type="datetime-local" th:field="*{voidedAt}"></label>
+            <label class="field">作废原因<input th:field="*{voidReason}"></label>
+        </div>
+        <h2>明细</h2>
+        <div id="line-rows">
+            <div class="repeat-row" th:each="row, stat : *{lines}">
+                <div class="row-tools">
+                    <strong>发票行</strong>
+                    <label class="check"><input type="checkbox" th:field="*{lines[__${stat.index}__].removed}"> 移除</label>
+                </div>
+                <input type="hidden" th:field="*{lines[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">行号<input type="number" min="1" th:field="*{lines[__${stat.index}__].lineNumber}"></label>
+                    <label class="field">名称<input th:field="*{lines[__${stat.index}__].itemName}"></label>
+                    <label class="field">规格<input th:field="*{lines[__${stat.index}__].itemSpecification}"></label>
+                    <label class="field">税收分类<input th:field="*{lines[__${stat.index}__].taxClassificationCode}"></label>
+                    <label class="field">数量<input type="number" step="0.0001" th:field="*{lines[__${stat.index}__].quantity}"></label>
+                    <label class="field">单位<input th:field="*{lines[__${stat.index}__].unit}"></label>
+                    <label class="field">不含税单价<input type="number" step="0.0001" th:field="*{lines[__${stat.index}__].unitNetPrice}"></label>
+                    <label class="field">税率处理
+                        <select th:field="*{lines[__${stat.index}__].taxTreatment}">
+                            <option th:each="item : ${taxTreatments}" th:value="${item}" th:text="${item}"></option>
+                        </select>
+                    </label>
+                    <label class="field">税率<input type="number" step="0.000001" th:field="*{lines[__${stat.index}__].taxRate}" placeholder="免税留空"></label>
+                    <label class="field">不含税<input type="number" step="0.01" th:field="*{lines[__${stat.index}__].netAmount}"></label>
+                    <label class="field">税额<input type="number" step="0.01" th:field="*{lines[__${stat.index}__].taxAmount}"></label>
+                    <label class="field">含税<input type="number" step="0.01" th:field="*{lines[__${stat.index}__].grossAmount}"></label>
+                    <label class="field">原发票行<input type="number" min="1" th:field="*{lines[__${stat.index}__].originalInvoiceLineId}"></label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('line-rows','line-template')">增加明细</button>
+        <h2>覆盖</h2>
+        <p class="hint">按本票行号指向明细。覆盖应收或应付不改变那笔本金。</p>
+        <div id="allocation-rows">
+            <div class="repeat-row" th:each="row, stat : *{allocations}">
+                <div class="row-tools">
+                    <strong>覆盖</strong>
+                    <label class="check"><input type="checkbox" th:field="*{allocations[__${stat.index}__].removed}"> 移除</label>
+                </div>
+                <input type="hidden" th:field="*{allocations[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">行号<input type="number" min="1" th:field="*{allocations[__${stat.index}__].lineNumber}"></label>
+                    <label class="field">合同
+                        <select th:field="*{allocations[__${stat.index}__].contractId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${contractChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">项目
+                        <select th:field="*{allocations[__${stat.index}__].projectId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${projectChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">阶段
+                        <select th:field="*{allocations[__${stat.index}__].contractStageId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${stageChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">开票计划
+                        <select th:field="*{allocations[__${stat.index}__].billingScheduleId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${billingScheduleChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">应收
+                        <select th:field="*{allocations[__${stat.index}__].receivableItemId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${receivableChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">应付
+                        <select th:field="*{allocations[__${stat.index}__].payableItemId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${payableChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">金额<input type="number" step="0.01" th:field="*{allocations[__${stat.index}__].allocatedAmount}"></label>
+                    <label class="field">币种<input th:field="*{allocations[__${stat.index}__].currency}" placeholder="如 CNY"></label>
+                    <label class="field">口径
+                        <select th:field="*{allocations[__${stat.index}__].allocationBasis}">
+                            <option th:each="item : ${allocationBases}" th:value="${item}" th:text="${item}"></option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('allocation-rows','allocation-template')">增加覆盖</button>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+    <div id="line-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>发票行</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="lines[__INDEX__].id" value="">
+            <input type="hidden" name="lines[__INDEX__].removed" value="false">
+            <div class="grid">
+                <label class="field">行号<input type="number" min="1" name="lines[__INDEX__].lineNumber"></label>
+                <label class="field">名称<input name="lines[__INDEX__].itemName"></label>
+                <label class="field">规格<input name="lines[__INDEX__].itemSpecification"></label>
+                <label class="field">税收分类<input name="lines[__INDEX__].taxClassificationCode"></label>
+                <label class="field">数量<input type="number" step="0.0001" name="lines[__INDEX__].quantity"></label>
+                <label class="field">单位<input name="lines[__INDEX__].unit"></label>
+                <label class="field">不含税单价<input type="number" step="0.0001" name="lines[__INDEX__].unitNetPrice"></label>
+                <label class="field">税率处理
+                    <select name="lines[__INDEX__].taxTreatment">
+                        <option th:each="item : ${taxTreatments}" th:value="${item}" th:text="${item}"></option>
+                    </select>
+                </label>
+                <label class="field">税率<input type="number" step="0.000001" name="lines[__INDEX__].taxRate" placeholder="免税留空"></label>
+                <label class="field">不含税<input type="number" step="0.01" name="lines[__INDEX__].netAmount"></label>
+                <label class="field">税额<input type="number" step="0.01" name="lines[__INDEX__].taxAmount"></label>
+                <label class="field">含税<input type="number" step="0.01" name="lines[__INDEX__].grossAmount"></label>
+                <label class="field">原发票行<input type="number" min="1" name="lines[__INDEX__].originalInvoiceLineId"></label>
+            </div>
+        </div>
+    </div>
+    <div id="allocation-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>覆盖</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="allocations[__INDEX__].id" value="">
+            <input type="hidden" name="allocations[__INDEX__].removed" value="false">
+            <div class="grid">
+                <label class="field">行号<input type="number" min="1" name="allocations[__INDEX__].lineNumber"></label>
+                <label class="field">合同
+                    <select name="allocations[__INDEX__].contractId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${contractChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">项目
+                    <select name="allocations[__INDEX__].projectId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${projectChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">阶段
+                    <select name="allocations[__INDEX__].contractStageId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${stageChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">开票计划
+                    <select name="allocations[__INDEX__].billingScheduleId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${billingScheduleChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">应收
+                    <select name="allocations[__INDEX__].receivableItemId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${receivableChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">应付
+                    <select name="allocations[__INDEX__].payableItemId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${payableChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">金额<input type="number" step="0.01" name="allocations[__INDEX__].allocatedAmount"></label>
+                <label class="field">币种<input name="allocations[__INDEX__].currency" placeholder="如 CNY"></label>
+                <label class="field">口径
+                    <select name="allocations[__INDEX__].allocationBasis">
+                        <option th:each="item : ${allocationBases}" th:value="${item}" th:text="${item}"></option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

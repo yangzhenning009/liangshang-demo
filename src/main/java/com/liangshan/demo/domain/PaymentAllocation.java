@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 付款核销。报销付款只核销对应应付，不新建成本。
+ * 收付款核销。apply 核销，reverse 撤销。不新建成本，也不改应收应付本金。
  */
 @Entity
 @Table(name = "payment_allocation", indexes = {

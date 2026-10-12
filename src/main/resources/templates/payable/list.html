@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>应付 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>应付</h1>
+            <p class="lede">采购款、预付和员工报销都记在应付上。引用供应商档案后，采购公司和供货对象不能再改。</p>
+        </div>
+        <a class="btn" th:href="@{/payables/new}">登记应付</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>用途</th>
+                    <th>本金</th>
+                    <th>未结</th>
+                    <th>到期日</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="7" class="empty">还没有应付。报销批准后也会出现在这里。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.number}">AP-1</td>
+                    <td th:text="${item.purpose}">采购款</td>
+                    <td th:text="${item.amount + ' ' + item.currency}">1000</td>
+                    <td th:text="${item.outstanding == null ? '—' : item.outstanding + ' ' + item.currency}">1000</td>
+                    <td th:text="${item.dueDate == null ? '—' : item.dueDate}">2026-02-09</td>
+                    <td><span class="badge" th:text="${item.status}">已确认</span></td>
+                    <td class="actions"><a th:href="@{/payables/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

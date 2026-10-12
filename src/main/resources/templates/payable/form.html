@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>应付 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${form.id == null} ? '登记应付' : '应付 ' + ${form.payableNumber}">登记应付</h1>
+            <p class="lede">供应商应付的债务公司须是档案上的采购公司，债权人须是供货对象。相对触发会写入实际到期日。</p>
+        </div>
+        <a class="btn secondary" th:href="@{/payables}">返回列表</a>
+    </div>
+    <section class="panel" th:if="${form.id != null}">
+        <h2>未结</h2>
+        <p><strong th:text="${outstanding == null ? '—' : outstanding}">1000</strong></p>
+    </section>
+    <form class="panel" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/payables} : @{/payables/{id}(id=${form.id})}">
+        <div class="alert" th:if="${#fields.hasErrors()}">
+            <strong>请修正后再保存</strong>
+            <ul>
+                <li th:each="err : ${#fields.allErrors()}" th:text="${err}">错误</li>
+            </ul>
+        </div>
+        <input type="hidden" th:field="*{id}">
+        <div class="grid">
+            <label class="field">应付编号<input th:field="*{payableNumber}"></label>
+            <label class="field">用途
+                <select th:field="*{payablePurpose}">
+                    <option th:each="item : ${payablePurposes}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+            <label class="field">本金<input type="number" step="0.01" min="0" th:field="*{payableAmount}" placeholder="选计划可留空"></label>
+            <label class="field">币种<input th:field="*{currency}" placeholder="如 CNY"></label>
+            <label class="field">债务公司
+                <select th:field="*{debtorCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${companyChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">债务法人
+                <select th:field="*{debtorLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${legalPersonChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">债权公司
+                <select th:field="*{creditorCompanyId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${companyChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">债权法人
+                <select th:field="*{creditorLegalPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${legalPersonChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">债权自然人
+                <select th:field="*{creditorPersonId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${personChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">供应商档案
+                <select th:field="*{supplierId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${supplierChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">合同
+                <select th:field="*{contractId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${contractChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">收付款计划
+                <select th:field="*{contractPaymentScheduleId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${paymentScheduleChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">项目
+                <select th:field="*{projectId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${projectChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">阶段
+                <select th:field="*{contractStageId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${stageChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">到期日<input type="date" th:field="*{dueDate}"></label>
+            <label class="field">触发验收
+                <select th:field="*{triggerAcceptanceEventId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${acceptanceChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">触发发票
+                <select th:field="*{triggerInvoiceId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${invoiceChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">依据材料
+                <select th:replace="~{fragments/document-select :: bound('sourceDocumentId')}"></select>
+            </label>
+            <label class="field">确认人
+                <select th:field="*{confirmedByEmployeeId}">
+                    <option value="">不选</option>
+                    <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                </select>
+            </label>
+            <label class="field">确认时间<input type="datetime-local" th:field="*{confirmedAt}"></label>
+            <label class="field">状态
+                <select th:field="*{status}">
+                    <option th:each="item : ${itemStatuses}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </label>
+        </div>
+        <h2>调整</h2>
+        <div id="adjustment-rows">
+            <div class="repeat-row" th:each="row, stat : *{adjustments}">
+                <div class="row-tools">
+                    <strong>调整</strong>
+                    <label class="check"><input type="checkbox" th:field="*{adjustments[__${stat.index}__].removed}"> 移除</label>
+                </div>
+                <input type="hidden" th:field="*{adjustments[__${stat.index}__].id}">
+                <div class="grid">
+                    <label class="field">增加<input type="number" step="0.01" min="0" th:field="*{adjustments[__${stat.index}__].increaseAmount}"></label>
+                    <label class="field">减少<input type="number" step="0.01" min="0" th:field="*{adjustments[__${stat.index}__].decreaseAmount}"></label>
+                    <label class="field">原因<input th:field="*{adjustments[__${stat.index}__].adjustmentReason}"></label>
+                    <label class="field">审批人
+                        <select th:field="*{adjustments[__${stat.index}__].approvedByEmployeeId}">
+                            <option value="">不选</option>
+                            <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                        </select>
+                    </label>
+                    <label class="field">审批时间<input type="datetime-local" th:field="*{adjustments[__${stat.index}__].approvedAt}"></label>
+                    <label class="field">状态
+                        <select th:field="*{adjustments[__${stat.index}__].status}">
+                            <option th:each="item : ${adjustmentStatuses}" th:value="${item}" th:text="${item}"></option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="secondary" type="button" onclick="addRow('adjustment-rows','adjustment-template')">增加调整</button>
+        <div class="form-actions">
+            <button type="submit">保存</button>
+        </div>
+    </form>
+    <div id="adjustment-template" hidden>
+        <div class="repeat-row">
+            <div class="row-tools">
+                <strong>调整</strong>
+                <button class="danger small" type="button" onclick="removeRow(this)">移除</button>
+            </div>
+            <input type="hidden" name="adjustments[__INDEX__].id" value="">
+            <input type="hidden" name="adjustments[__INDEX__].removed" value="false">
+            <div class="grid">
+                <label class="field">增加<input type="number" step="0.01" min="0" name="adjustments[__INDEX__].increaseAmount"></label>
+                <label class="field">减少<input type="number" step="0.01" min="0" name="adjustments[__INDEX__].decreaseAmount"></label>
+                <label class="field">原因<input name="adjustments[__INDEX__].adjustmentReason"></label>
+                <label class="field">审批人
+                    <select name="adjustments[__INDEX__].approvedByEmployeeId">
+                        <option value="">不选</option>
+                        <option th:each="choice : ${employeeChoices}" th:value="${choice.id}" th:text="${choice.label}"></option>
+                    </select>
+                </label>
+                <label class="field">审批时间<input type="datetime-local" name="adjustments[__INDEX__].approvedAt"></label>
+                <label class="field">状态
+                    <select name="adjustments[__INDEX__].status">
+                        <option th:each="item : ${adjustmentStatuses}" th:value="${item}" th:text="${item}"></option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

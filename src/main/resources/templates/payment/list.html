@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+    <title>收付款 · 梁山集团</title>
+</head>
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <h1>收付款</h1>
+            <p class="lede">收款、付款、代付和退款都记在同一张收付款上。退款用反向收付加撤销，不改原单金额。</p>
+        </div>
+        <a class="btn" th:href="@{/payments/new}">登记收付款</a>
+    </div>
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>种类</th>
+                    <th>金额</th>
+                    <th>未分配</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="6" class="empty">还没有收付款。</td>
+                </tr>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.paymentNumber}">PAY-1</td>
+                    <td th:text="${item.paymentKind}">普通收付</td>
+                    <td th:text="${item.paymentAmount + ' ' + item.currency}">30000</td>
+                    <td th:text="${item.unallocated == null ? '—' : item.unallocated + ' ' + item.currency}">0</td>
+                    <td><span class="badge" th:text="${item.status}">已确认</span></td>
+                    <td class="actions"><a th:href="@{/payments/{id}/edit(id=${item.id})}">编辑</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -100,6 +100,30 @@ public final class Codes {
     public static final String PAYABLE_CONFIRMED = "已确认";
     public static final List<String> PAYABLE_STATUS = List.of("草稿", PAYABLE_CONFIRMED, "已作废");
     public static final String PAYABLE_REIMBURSEMENT = "员工报销";
+    public static final List<String> INVOICE_TYPES = List.of("增值税专用发票", "增值税普通发票", "其他");
+    public static final List<String> INVOICE_MEDIUMS = List.of("电子", "纸质");
+    public static final List<String> INVOICE_COLORS = List.of("蓝字", "红字");
+    public static final String INVOICE_ISSUED = "已开具";
+    public static final List<String> INVOICE_STATUS = List.of("草稿", INVOICE_ISSUED, "已作废");
+    public static final List<String> TAX_TREATMENTS = List.of("适用税率", "免税", "不征税");
+    public static final String ALLOCATION_GROSS = "含税";
+    public static final String ALLOCATION_NET = "不含税";
+    public static final List<String> INVOICE_ALLOCATION_BASIS = List.of(ALLOCATION_GROSS, ALLOCATION_NET);
+    public static final List<String> RECEIVABLE_PURPOSES = List.of("预收约定款", "阶段款", "尾款", "质保金", "其他");
+    public static final List<String> PAYABLE_PURPOSES = List.of("采购款", "预付约定款", "员工报销", "尾款", "其他");
+    public static final String ADJUSTMENT_APPROVED = "已批准";
+    public static final List<String> ADJUSTMENT_STATUS = List.of("草稿", ADJUSTMENT_APPROVED, "已作废");
+    public static final String PAYMENT_NORMAL = "普通收付";
+    public static final String PAYMENT_REFUND = "退款";
+    public static final List<String> PAYMENT_KINDS = List.of(PAYMENT_NORMAL, PAYMENT_REFUND);
+    public static final List<String> PAYMENT_PURPOSE = List.of("合同款", "员工报销", "预付款", "其他");
+    public static final List<String> PAYMENT_CHANNELS = List.of("银行转账", "现金", "支付平台");
+    public static final String PAYMENT_CONFIRMED = "已确认";
+    public static final List<String> PAYMENT_STATUS = List.of("草稿", PAYMENT_CONFIRMED, "已作废");
+    public static final String SETTLEMENT_APPLY = "apply";
+    public static final String SETTLEMENT_REVERSE = "reverse";
+    public static final List<String> SETTLEMENT_ACTIONS = List.of(SETTLEMENT_APPLY, SETTLEMENT_REVERSE);
+    public static final List<String> SETTLEMENT_STATUS = List.of("草稿", "已确认");
 
     private Codes() {
     }
